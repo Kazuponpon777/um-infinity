@@ -17,16 +17,42 @@ import alert_logger
 
 # Import Weather main with proper path isolation
 weather_main = None
+weather_error_msg = None
 try:
-    # Save current path
+    print(f"[Weather Import] Attempting to load from: {WEATHER_DIR}")
+    
+    # Save current state
     original_path = sys.path.copy()
     original_cwd = os.getcwd()
     
-    # Change to Weather_PoC directory and import
+    # Change to Weather_PoC directory for proper relative imports
     os.chdir(WEATHER_DIR)
     sys.path.insert(0, WEATHER_DIR)
     
     import importlib.util
+    
+    # First, load all the weather dependencies in the correct order
+    weather_modules = [
+        'fetch_jma_data',
+        'fetch_satellite', 
+        'fetch_space',
+        'fetch_geomag',
+        'fetch_urban_bio',
+        'topology_engine',
+        'visual_engine',
+        'archiver'
+    ]
+    
+    for mod_name in weather_modules:
+        mod_path = os.path.join(WEATHER_DIR, f'{mod_name}.py')
+        if os.path.exists(mod_path):
+            spec = importlib.util.spec_from_file_location(mod_name, mod_path)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[mod_name] = mod
+            spec.loader.exec_module(mod)
+            print(f"  [OK] Loaded {mod_name}")
+    
+    # Now load the main weather module
     weather_main_spec = importlib.util.spec_from_file_location(
         "weather_main", 
         os.path.join(WEATHER_DIR, 'main.py')
@@ -35,13 +61,20 @@ try:
     weather_main_spec.loader.exec_module(weather_main)
     print("[OK] Weather module loaded successfully")
     
-    # Restore path
+    # Restore original state
     os.chdir(original_cwd)
+    
 except Exception as e:
-    print(f"[Warning] Could not load Weather module: {e}")
+    weather_error_msg = str(e)
+    print(f"[ERROR] Could not load Weather module: {e}")
     import traceback
     traceback.print_exc()
     weather_main = None
+    # Restore original cwd if changed
+    try:
+        os.chdir(original_cwd)
+    except:
+        pass
 
 app = Flask(__name__)
 
@@ -118,7 +151,9 @@ def api_analyze():
 def api_weather_analyze():
     """Weather Analysis API"""
     if weather_main is None:
-        return jsonify({"error": "Weather module not available"}), 500
+        error_detail = weather_error_msg if weather_error_msg else "Unknown import error"
+        print(f"[Weather API] Module unavailable: {error_detail}")
+        return jsonify({"error": f"気象モジュールが利用できません: {error_detail}"}), 500
     
     date_str = request.args.get('date')
     
