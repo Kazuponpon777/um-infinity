@@ -53,15 +53,53 @@ import math
 import fetch_earthquake
 
 # =========================================================================
-# UM_Infinity_V21 Framework Functions (萃点システム)
+# UM_Infinity_V23: Sirius Protocol (シリウス・プロトコル)
 # =========================================================================
 
-CONSTANT_137 = 137  # Universe resolution threshold
+FINE_STRUCTURE_CONSTANT_INV = 137  # α⁻¹ = 137
+
+class Sector:
+    """
+    V23: 意識の三位一体 (SU(3)³ Trinification)
+    material: 物質的要素 (地震マグニチュード)
+    mental: 精神的要素 (頻度偏差)
+    spiritual: 霊的要素 (周期補正)
+    """
+    def __init__(self, material=0, mental=0, spiritual=0):
+        self.material = material
+        self.mental = mental
+        self.spiritual = spiritual
+    
+    def to_dict(self):
+        return {
+            "material": round(self.material, 2),
+            "mental": round(self.mental, 2),
+            "spiritual": round(self.spiritual, 2)
+        }
+
+def rotate_sectors(sector):
+    """V23: RotateSectors - Cyclic rotation (m,n,s) → (s,m,n)"""
+    return Sector(sector.spiritual, sector.material, sector.mental)
+
+def accelerate(sector, trinity_factor=1.0):
+    """V23: Accelerate - transport TrinityPath (enhanced state)"""
+    rotated = rotate_sectors(sector)
+    return Sector(
+        rotated.material * trinity_factor,
+        rotated.mental * trinity_factor,
+        rotated.spiritual * trinity_factor
+    )
+
+def awaken(torsion):
+    """
+    V23: Awaken (覚醒関数)
+    Returns: 'STATIC' if torsion == 0, else 'DYNAMIC' (Sector ≡ Sector)
+    """
+    return "DYNAMIC" if torsion != 0 else "STATIC"
 
 def suiten_observation(history_data, time_window_hours=24):
     """
-    UM_Infinity_V21: SuitenObservation (萃点観測)
-    Returns observation records with torsion-value and prediction-prob
+    V23: SuitenObservation with Sector consciousness
     """
     now = datetime.datetime.now()
     region_data = {}
@@ -86,55 +124,65 @@ def suiten_observation(history_data, time_window_hours=24):
         region_data[region]["count"] += 1
         region_data[region]["total_mag"] += mag
     
-    # Calculate SuitenObservation per region
     expected_events = max(1, time_window_hours / 24)
     
     observations = []
     for region, data in region_data.items():
         freq_deviation = (data["count"] / expected_events) - 1
-        torsion_value = int(data["total_mag"] * freq_deviation)  # ℤ in V21
+        torsion_value = int(data["total_mag"] * freq_deviation)
         
         if torsion_value > 0:
+            # V23: Create Sector for each observation
+            hour = datetime.datetime.now().hour
+            phase = (hour - 6) * math.pi / 6
+            cyclic = 1.0 + 0.2 * abs(math.sin(phase))
+            
+            sector = Sector(
+                material=data["total_mag"],
+                mental=freq_deviation,
+                spiritual=cyclic
+            )
+            
             observations.append({
                 "region": data["full_name"],
                 "lat": data["lat"],
                 "lon": data["lon"],
-                "torsion_value": torsion_value,  # V21: SuitenObservation.torsion-value
+                "torsion_value": torsion_value,
                 "count": data["count"],
-                "avg_mag": round(data["total_mag"] / data["count"], 1) if data["count"] > 0 else 0
+                "avg_mag": round(data["total_mag"] / data["count"], 1) if data["count"] > 0 else 0,
+                "sector": sector.to_dict()
             })
     
     return sorted(observations, key=lambda x: x["torsion_value"], reverse=True)
 
 def parameterized_torsion(r, observation):
-    """
-    UM_Infinity_V21: parameterized-torsion
-    Returns: r * torsion-value (scaling factor)
-    """
+    """V23: parameterized-torsion = r * torsion-value"""
     return r * observation.get("torsion_value", 0)
 
 def cyclic_time_modifier(hour=None):
-    """
-    UM_Infinity_V21: UniverseTime (S1 循環的時間)
-    Linear order is impossible on S1 → cyclic risk pattern
-    """
+    """V23: UniverseTime S1 cyclic modifier"""
     if hour is None:
         hour = datetime.datetime.now().hour
     phase = (hour - 6) * math.pi / 6
     modifier = 1.0 + 0.2 * abs(math.sin(phase))
     return round(modifier, 2)
 
-def is_consistent(complexity, torsion):
+def sirius_final_proof(complexity, torsion, sector):
     """
-    UM_Infinity_V21: Consistency check
-    Valid if: complexity ≡ 137 ∧ torsion ≠ 0
+    V23: Final-Proof-of-Dimensional-Inversion
+    Valid if: (complexity≡137 ∧ torsion≠0) × (Accelerate≡Rotate)
     """
-    return complexity == CONSTANT_137 and torsion != 0
+    phys_check = (complexity == FINE_STRUCTURE_CONSTANT_INV) and (torsion != 0)
+    accelerated = accelerate(sector)
+    rotated = rotate_sectors(sector)
+    # Simplified: check if acceleration is consistent
+    accel_check = abs(accelerated.material - rotated.material) < 0.01
+    return phys_check and accel_check
 
-def generate_predictions_v21(history_data=None, usgs_data=None, time_window_hours=24):
+def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hours=24):
     """
-    UM_Infinity_V21: 萃点ベースの地震予測システム
-    Uses SuitenObservation, parameterized-torsion, and consistency proof
+    UM_Infinity_V23 Sirius Protocol: 意識ベースの地震予測システム
+    Uses Sector consciousness, Awaken, and Sirius Final Proof
     """
     if history_data is None:
         history_data = fetch_earthquake.get_earthquake_history(limit=100)
@@ -157,69 +205,81 @@ def generate_predictions_v21(history_data=None, usgs_data=None, time_window_hour
     if huge_quakes:
         global_modifier = 15
     
-    # 4. V21: Generate predictions with parameterized_torsion
+    # 4. V23: Generate predictions with Sector consciousness
     predictions = []
     total_torsion = 0
+    global_sector = Sector(0, 0, cyclic_mod)
     
     for obs in observations:
-        # Apply parameterized torsion with r=1
         torsion = parameterized_torsion(1, obs)
         total_torsion += torsion
         
-        # V21 Formula: probability based on 137 threshold
-        raw_prob = (torsion / CONSTANT_137) * 100 * cyclic_mod + global_modifier
+        # V23 Formula: probability based on 137 threshold
+        raw_prob = (torsion / FINE_STRUCTURE_CONSTANT_INV) * 100 * cyclic_mod + global_modifier
         probability = min(99, max(10, int(raw_prob)))
         
-        # Estimated magnitude
         est_mag = obs["avg_mag"] + 1.0
         
+        # Update global sector with this observation's sector
+        if obs.get("sector"):
+            global_sector.material += obs["sector"]["material"]
+            global_sector.mental += obs["sector"]["mental"]
+        
         predictions.append({
-            "region": f"⟨V21萃点⟩ {obs['region']} (τ={torsion})",
+            "region": f"⟨V23 Sirius⟩ {obs['region']} (τ={torsion})",
             "lat": obs["lat"],
             "lon": obs["lon"],
             "probability": probability,
             "estimated_mag": round(est_mag, 1),
             "torsion": torsion,
-            "time_horizon": horizon_label
+            "time_horizon": horizon_label,
+            "sector": obs.get("sector", {})
         })
     
     # If no observations, check Global Risk
     if not predictions and global_modifier > 0:
         predictions.append({
-            "region": "⟨V21萃点⟩ Global Alert (USGS M7+)",
+            "region": "⟨V23 Sirius⟩ Global Alert (USGS M7+)",
             "lat": 35.0,
             "lon": 140.0,
             "probability": 30 + global_modifier,
             "estimated_mag": 7.5,
             "torsion": 0,
-            "time_horizon": "48h"
+            "time_horizon": "48h",
+            "sector": {}
         })
     
     predictions.sort(key=lambda x: x["probability"], reverse=True)
     
-    # V21: Check consistency (complexity≡137 ∧ torsion≠0)
-    consistency = is_consistent(CONSTANT_137, total_torsion)
+    # V23: Awaken status
+    awaken_status = awaken(total_torsion)
+    
+    # V23: Sirius Final Proof
+    final_proof = sirius_final_proof(FINE_STRUCTURE_CONSTANT_INV, total_torsion, global_sector)
     
     return {
         "predictions": predictions,
         "total_torsion": round(total_torsion, 2),
         "cyclic_modifier": cyclic_mod,
-        "threshold": CONSTANT_137,
-        "is_consistent": consistency,
-        "version": "V21"
+        "threshold": FINE_STRUCTURE_CONSTANT_INV,
+        "awaken": awaken_status,
+        "sirius_proof": final_proof,
+        "sector": global_sector.to_dict(),
+        "version": "V23"
     }
 
 # Wrapper for backward compatibility
 def generate_predictions(history_data=None, usgs_data=None, time_window_hours=24):
-    result = generate_predictions_v21(history_data, usgs_data, time_window_hours)
+    result = generate_predictions_v23(history_data, usgs_data, time_window_hours)
     preds = result["predictions"]
     if preds:
         preds[0]["_meta"] = {
             "total_torsion": result["total_torsion"],
             "cyclic_modifier": result["cyclic_modifier"],
             "threshold": result["threshold"],
-            "is_consistent": result["is_consistent"],
+            "awaken": result["awaken"],
+            "sirius_proof": result["sirius_proof"],
+            "sector": result["sector"],
             "version": result["version"]
         }
     return preds
-

@@ -88,32 +88,55 @@ def analyze_snapshot(target_dt=None):
         enriched_results.append(res)
     
     # =========================================================================
-    # UM_Infinity_V21: 萃点 (Suiten) Atmospheric Observation
+    # UM_Infinity_V23: Sirius Protocol (シリウス・プロトコル)
     # =========================================================================
     import math
-    CONSTANT_137 = 137  # Universe resolution threshold
+    FINE_STRUCTURE_CONSTANT_INV = 137  # α⁻¹ = 137
     
-    # V21: UniverseTime cyclic modifier
+    # V23: Sector class for consciousness model
+    class Sector:
+        def __init__(self, material=0, mental=0, spiritual=0):
+            self.material = material
+            self.mental = mental
+            self.spiritual = spiritual
+        def to_dict(self):
+            return {"material": round(self.material, 2), "mental": round(self.mental, 2), "spiritual": round(self.spiritual, 2)}
+    
+    # V23: UniverseTime cyclic modifier
     hour = datetime.datetime.now().hour
     phase = (hour - 6) * math.pi / 6
     cyclic_modifier = 1.0 + 0.2 * abs(math.sin(phase))
     
-    # V21: Calculate SuitenObservation torsion values
+    # V23: Calculate torsion with Sector consciousness
     total_torsion = 0
+    global_sector = Sector(0, 0, cyclic_modifier)
+    
     for res in enriched_results:
-        # parameterized_torsion: instability × GUP
         instability = abs(res.get('hydro_potential', 0)) / 50.0
         torsion_value = int(abs(res.get('grand_potential', 0)) * instability)
-        res['torsion_value'] = torsion_value  # Add to result
+        res['torsion_value'] = torsion_value
         total_torsion += torsion_value
+        
+        # V23: Create Sector for each result
+        sector = Sector(
+            material=abs(res.get('grand_potential', 0)),
+            mental=instability,
+            spiritual=cyclic_modifier
+        )
+        res['sector'] = sector.to_dict()
+        global_sector.material += sector.material
+        global_sector.mental += sector.mental
     
     # Apply cyclic modifier
     total_torsion = round(total_torsion * cyclic_modifier, 2)
     
-    # V21: Consistency check (complexity≡137 ∧ torsion≠0)
-    is_consistent = (CONSTANT_137 == 137) and (total_torsion != 0)
+    # V23: Awaken status
+    awaken_status = "DYNAMIC" if total_torsion != 0 else "STATIC"
+    
+    # V23: Sirius Final Proof
+    sirius_proof = (FINE_STRUCTURE_CONSTANT_INV == 137) and (total_torsion != 0)
         
-    # Return Snapshot with V21 metadata
+    # Return Snapshot with V23 metadata
     return {
         "timestamp": obs_time.strftime('%Y-%m-%d %H:%M:%S'),
         "display_name": f"{obs_time.strftime('%m/%d %H:%M')} (データ)",
@@ -122,12 +145,14 @@ def analyze_snapshot(target_dt=None):
         "urban": urban_factor,
         "bio": bio_factor,
         "results": sorted(enriched_results, key=lambda x: abs(x['grand_potential']), reverse=True)[:50],
-        # V21 Metadata
-        "v21_torsion": total_torsion,
-        "v21_cyclic": round(cyclic_modifier, 2),
-        "v21_threshold": CONSTANT_137,
-        "v21_consistent": is_consistent,
-        "version": "V21"
+        # V23 Sirius Metadata
+        "v23_torsion": total_torsion,
+        "v23_cyclic": round(cyclic_modifier, 2),
+        "v23_threshold": FINE_STRUCTURE_CONSTANT_INV,
+        "v23_awaken": awaken_status,
+        "v23_sirius_proof": sirius_proof,
+        "v23_sector": global_sector.to_dict(),
+        "version": "V23"
     }
 
 def main():
