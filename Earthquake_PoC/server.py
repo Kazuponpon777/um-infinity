@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify
 import datetime
 import sys
 import os
+import time
+import threading
 
 # Get absolute paths
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -43,6 +45,35 @@ except Exception as e:
 
 app = Flask(__name__)
 
+# =========================================================================
+# Data Cache (5-minute TTL)
+# =========================================================================
+CACHE_TTL_SECONDS = 300  # 5 minutes
+
+class DataCache:
+    def __init__(self):
+        self.cache = {}
+        self.lock = threading.Lock()
+    
+    def get(self, key):
+        with self.lock:
+            if key in self.cache:
+                data, timestamp = self.cache[key]
+                if time.time() - timestamp < CACHE_TTL_SECONDS:
+                    print(f"[Cache HIT] {key}")
+                    return data
+                else:
+                    print(f"[Cache EXPIRED] {key}")
+                    del self.cache[key]
+            return None
+    
+    def set(self, key, data):
+        with self.lock:
+            self.cache[key] = (data, time.time())
+            print(f"[Cache SET] {key}")
+
+data_cache = DataCache()
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -53,11 +84,17 @@ def api_alerts():
 
 @app.route('/api/analyze')
 def api_analyze():
-    """Earthquake Analysis API (V20)"""
+    """Earthquake Analysis API"""
     date_str = request.args.get('date')
     horizon = request.args.get('horizon', '24h')
     horizon_map = {'24h': 24, '1w': 168, '1m': 720, '6m': 4320, '1y': 8760}
     time_window_hours = horizon_map.get(horizon, 24)
+    
+    # Cache key
+    cache_key = f"earthquake_{date_str}_{horizon}"
+    cached = data_cache.get(cache_key)
+    if cached:
+        return jsonify(cached)
     
     target_dt = None
     if date_str and date_str != 'now':
@@ -71,6 +108,7 @@ def api_analyze():
         if not snapshot:
             return jsonify({"error": "データが見つかりません"}), 404
         snapshot["mode"] = "earthquake"
+        data_cache.set(cache_key, snapshot)
         return jsonify(snapshot)
     except Exception as e:
         print(f"Error: {e}")
@@ -81,8 +119,15 @@ def api_weather_analyze():
     """Weather Analysis API"""
     if weather_main is None:
         return jsonify({"error": "Weather module not available"}), 500
-        
+    
     date_str = request.args.get('date')
+    
+    # Cache key
+    cache_key = f"weather_{date_str}"
+    cached = data_cache.get(cache_key)
+    if cached:
+        return jsonify(cached)
+    
     target_dt = None
     if date_str and date_str != 'now':
         try:
@@ -95,6 +140,7 @@ def api_weather_analyze():
         if not snapshot:
             return jsonify({"error": "気象データが見つかりません"}), 404
         snapshot["mode"] = "weather"
+        data_cache.set(cache_key, snapshot)
         return jsonify(snapshot)
     except Exception as e:
         print(f"Weather Error: {e}")
