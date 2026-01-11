@@ -48,9 +48,37 @@
         tr:hover { background: #2a2a2a; }
 
         .footer { margin-top: 30px; font-size: 0.8em; color: #666; text-align: center; }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .loading-overlay.active { display: flex; }
+        .loading-spinner {
+            width: 50px; height: 50px;
+            border: 4px solid #333;
+            border-top: 4px solid #50e3c2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { color: #50e3c2; margin-top: 15px; font-size: 1.1em; }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">読み込み中...</div>
+    </div>
+    
     <div class="container">
         <h1 id="mainTitle">UM∞N Unified Monitor</h1>
         
@@ -200,24 +228,50 @@
             });
             fetchData('now');
         }
+        
+        // Loading indicator helpers
+        function showLoading(text) {
+            document.getElementById('loadingText').innerText = text || '読み込み中...';
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
 
         async function fetchData(dateParam) {
+            const modeText = (currentMode === 'weather') ? '天気データ' : '地震データ';
+            showLoading(modeText + 'を取得中...');
+            
             try {
                 const apiUrl = (currentMode === 'weather') 
                     ? `/api/weather/analyze?date=${dateParam}`
                     : `/api/analyze?date=${dateParam}&horizon=${currentHorizon}`;
-                const res = await fetch(apiUrl);
-                if(!res.ok) throw new Error("API Error");
+                
+                // Add timeout for slow connections
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60sec timeout
+                
+                const res = await fetch(apiUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                if(!res.ok) throw new Error("API Error: " + res.status);
                 const data = await res.json();
                 
                 if(data.error) {
-                    alert(data.error);
+                    console.error(data.error);
+                    document.getElementById('lastUpdated').innerText = "エラー: " + data.error;
                 } else {
                     renderDashboard(data);
                 }
             } catch(e) {
                 console.error(e);
-                alert("Failed to fetch data.");
+                if(e.name === 'AbortError') {
+                    document.getElementById('lastUpdated').innerText = "タイムアウト: 接続に時間がかかっています";
+                } else {
+                    document.getElementById('lastUpdated').innerText = "データ取得失敗";
+                }
+            } finally {
+                hideLoading();
             }
         }
 
