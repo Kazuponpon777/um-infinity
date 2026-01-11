@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Earthquake Monitor System</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #1a1a1a; color: #e0e0e0; margin: 0; padding: 20px; }
+        h1 { border-bottom: 2px solid #ff5e3a; padding-bottom: 10px; color: #ff5e3a; font-size: 24px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #252525; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        
+        #map { height: 500px; width: 100%; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
+        
+        /* Controls Area */
+        .controls-area {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+            align-items: center;
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        button {
+            background: #ff5e3a;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { background: #e04e2a; }
+        
+        .factors { display: flex; gap: 20px; margin-bottom: 30px; }
+        .card { background: #333; padding: 15px; border-radius: 5px; flex: 1; text-align: center; }
+        .card h3 { margin: 0 0 5px 0; font-size: 0.8em; color: #aaa; }
+        .card .val { font-size: 1.8em; font-weight: bold; color: #fff; }
+        .card .desc { font-size: 0.7em; color: #888; margin-top: 5px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        th { text-align: left; border-bottom: 1px solid #555; padding: 10px; color: #888; }
+        td { padding: 10px; border-bottom: 1px solid #333; }
+        tr:hover { background: #2a2a2a; }
+
+        .footer { margin-top: 30px; font-size: 0.8em; color: #666; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="mainTitle">UM∞N Unified Monitor</h1>
+        
+        <!-- Mode Toggle -->
+        <div class="controls-area" style="justify-content:center; gap:10px;">
+            <button id="modeEarthquake" onclick="setMode('earthquake')" style="background:#ff5e3a;">🌍 地震 (Earthquake)</button>
+            <button id="modeWeather" onclick="setMode('weather')">🌦️ 天気 (Weather)</button>
+        </div>
+        
+        <div class="controls-area">
+            <button onclick="fetchData('now')">⚡ 最新データ取得</button>
+            <span style="color:#aaa" id="lastUpdated">---</span>
+        </div>
+        
+        <!-- Time Horizon Selector (Earthquake only) -->
+        <div id="horizonControls" class="controls-area" style="flex-wrap:wrap;">
+            <span style="color:#ccc;">予測期間:</span>
+            <button id="btn24h" onclick="setHorizon('24h')" style="background:#50e3c2;">24時間</button>
+            <button id="btn1w" onclick="setHorizon('1w')">1週間</button>
+            <button id="btn1m" onclick="setHorizon('1m')">1ヶ月</button>
+            <button id="btn6m" onclick="setHorizon('6m')">半年</button>
+            <button id="btn1y" onclick="setHorizon('1y')">1年</button>
+        </div>
+        
+        <div class="factors">
+            <div class="card"><h3 id="labelCard1">発生時刻 (Time)</h3><div class="val" id="valTime" style="font-size:1.2em">---</div></div>
+            <div class="card"><h3 id="labelCard2">震源地 (Location)</h3><div class="val" id="valLoc" style="font-size:1.2em">---</div></div>
+            <div class="card"><h3 id="labelCard3">マグニチュード (Mag)</h3><div class="val" id="valMag">---</div></div>
+            <div class="card"><h3 id="labelCard4">最大震度 (Max Int)</h3><div class="val" id="valScale">---</div></div>
+            <div class="card" style="background:linear-gradient(135deg,#1a1a2e,#16213e); border:1px solid #50e3c2;">
+                <h3 style="color:#50e3c2;">⪯ V20 Torsion Index</h3>
+                <div class="val" id="valTorsion" style="color:#50e3c2;">---</div>
+                <div class="desc" id="valCyclic">Cyclic: ---</div>
+            </div>
+        </div>
+        
+        <div id="map"></div>
+        
+        <h2 id="sectionTitle1">地域別震度 (Observation Points)</h2>
+        <div style="max-height: 300px; overflow-y: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th id="tableHead1">地域 (Prefecture/Area)</th>
+                        <th id="tableHead2">震度 (Intensity)</th>
+                    </tr>
+                </thead>
+                <tbody id="pointsTableBody">
+                    <!-- Dynamic -->
+                </tbody>
+            </table>
+        </div>
+        
+        <h2>🔮 UM∞N V20 Earthquake Prediction</h2>
+        <div style="max-height: 200px; overflow-y: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>予測エリア (Target Area)</th>
+                        <th>τ (Torsion)</th>
+                        <th>発生確率 (Probability)</th>
+                        <th>推定M (Est. Mag)</th>
+                        <th>予測期間 (Horizon)</th>
+                    </tr>
+                </thead>
+                <tbody id="predictionTableBody">
+                    <!-- Dynamic -->
+                </tbody>
+            </table>
+        </div>
+
+        <h2 style="margin-top:30px; color:#ff5e3a;">⚠️ Alert History (過去のアラート履歴)</h2>
+        <div style="max-height: 300px; overflow-y: auto; background:#333; padding:10px;">
+            <table style="margin-top:0;">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>地域</th>
+                        <th>マグニチュード</th>
+                        <th>リスク</th>
+                    </tr>
+                </thead>
+                <tbody id="alertHistoryBody">
+                    <!-- Dynamic -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            Source: P2P Quake API<br>
+            Powered by UM-Infinity System
+        </div>
+    </div>
+
+    <script>
+        var map = L.map('map').setView([36.0, 138.0], 5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO'
+        }).addTo(map);
+        var layerGroup = L.layerGroup().addTo(map);
+        var predictionLayerGroup = L.layerGroup().addTo(map);
+        
+        // Mode state
+        var currentMode = 'earthquake';
+        
+        function setMode(mode) {
+            currentMode = mode;
+            // Update button styles
+            document.getElementById('modeEarthquake').style.background = (mode === 'earthquake') ? '#ff5e3a' : '#555';
+            document.getElementById('modeWeather').style.background = (mode === 'weather') ? '#50e3c2' : '#555';
+            // Update title
+            document.getElementById('mainTitle').innerText = (mode === 'earthquake') ? 'UM∞N 地震予測システム' : 'UM∞N 天気予測システム';
+            // Show/hide earthquake-specific controls
+            document.getElementById('horizonControls').style.display = (mode === 'earthquake') ? 'flex' : 'none';
+            
+            // Update labels based on mode
+            if(mode === 'weather') {
+                document.getElementById('labelCard1').innerText = '観測時刻 (Time)';
+                document.getElementById('labelCard2').innerText = '対象地域 (Area)';
+                document.getElementById('labelCard3').innerText = '宇宙天気 (Space)';
+                document.getElementById('labelCard4').innerText = '地磁気 (Geomag)';
+                document.getElementById('sectionTitle1').innerText = '🌦️ 気象リスク地域 (Weather Risks)';
+                document.getElementById('tableHead1').innerText = '地域 (Region)';
+                document.getElementById('tableHead2').innerText = 'リスク (Risk)';
+            } else {
+                document.getElementById('labelCard1').innerText = '発生時刻 (Time)';
+                document.getElementById('labelCard2').innerText = '震源地 (Location)';
+                document.getElementById('labelCard3').innerText = 'マグニチュード (Mag)';
+                document.getElementById('labelCard4').innerText = '最大震度 (Max Int)';
+                document.getElementById('sectionTitle1').innerText = '🌍 地域別震度 (Observation Points)';
+                document.getElementById('tableHead1').innerText = '地域 (Prefecture/Area)';
+                document.getElementById('tableHead2').innerText = '震度 (Intensity)';
+            }
+            
+            // Refetch
+            fetchData('now');
+        }
+        
+        // Horizon state
+        var currentHorizon = '24h';
+        
+        function setHorizon(h) {
+            currentHorizon = h;
+            ['24h', '1w', '1m', '6m', '1y'].forEach(id => {
+                document.getElementById('btn' + id).style.background = (id === h) ? '#50e3c2' : '#ff5e3a';
+            });
+            fetchData('now');
+        }
+
+        async function fetchData(dateParam) {
+            try {
+                const apiUrl = (currentMode === 'weather') 
+                    ? `/api/weather/analyze?date=${dateParam}`
+                    : `/api/analyze?date=${dateParam}&horizon=${currentHorizon}`;
+                const res = await fetch(apiUrl);
+                if(!res.ok) throw new Error("API Error");
+                const data = await res.json();
+                
+                if(data.error) {
+                    alert(data.error);
+                } else {
+                    renderDashboard(data);
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Failed to fetch data.");
+            }
+        }
+
+        function renderDashboard(snap) {
+            document.getElementById('lastUpdated').innerText = "Last checked: " + new Date().toLocaleTimeString();
+            
+            const mode = snap.mode || 'earthquake';
+            
+            // V20 Torsion display (works for both modes)
+            if(snap.v20_torsion !== undefined) {
+                document.getElementById('valTorsion').innerText = `τ = ${snap.v20_torsion} / 137`;
+                document.getElementById('valCyclic').innerText = `Cyclic: ×${snap.v20_cyclic}`;
+            } else if(snap.predictions && snap.predictions[0] && snap.predictions[0]._meta) {
+                const meta = snap.predictions[0]._meta;
+                document.getElementById('valTorsion').innerText = `τ = ${meta.total_torsion} / 137`;
+                document.getElementById('valCyclic').innerText = `Cyclic: ×${meta.cyclic_modifier}`;
+            }
+            
+            layerGroup.clearLayers();
+            predictionLayerGroup.clearLayers();
+            
+            if(mode === 'weather') {
+                // ===== WEATHER MODE =====
+                document.getElementById('valTime').innerText = snap.timestamp || "---";
+                document.getElementById('valLoc').innerText = "全国 (Japan)";
+                document.getElementById('valMag').innerText = `Space: ${snap.space?.toFixed(2) || '-'}`;
+                document.getElementById('valScale').innerText = `Geomag: ${snap.geomag?.toFixed(2) || '-'}`;
+                
+                // Plot weather results on map
+                const results = snap.results || [];
+                results.forEach(r => {
+                    const radius = Math.min(Math.abs(r.grand_potential || 0) * 500, 50000);
+                    L.circle([r.lat, r.lon], {
+                        color: r.risk_color || '#50e3c2',
+                        fillColor: r.risk_color || '#50e3c2',
+                        fillOpacity: 0.5,
+                        radius: Math.max(radius, 5000)
+                    }).addTo(layerGroup)
+                    .bindPopup(`<b>${r.region || '不明'}</b><br>GUP: ${(r.grand_potential || 0).toFixed(1)}<br>${r.risk_label || ''}`);
+                });
+                
+                // Points Table: Show weather results
+                const tbody = document.getElementById('pointsTableBody');
+                tbody.innerHTML = "";
+                results.slice(0, 20).forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${r.region || '不明'}</td><td class="${'risk-' + r.risk_cls}">${r.risk_label || '-'}</td>`;
+                    tbody.appendChild(tr);
+                });
+                
+                // Prediction Table: Show top risks
+                const predBody = document.getElementById('predictionTableBody');
+                predBody.innerHTML = "";
+                results.slice(0, 5).forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>⟨V20⟩ ${r.region}</td>
+                        <td style="color:#50e3c2;">-</td>
+                        <td style="color:${r.risk_color};">${(r.grand_potential || 0).toFixed(1)}</td>
+                        <td>-</td>
+                        <td style="color:#aaa;">Now</td>
+                    `;
+                    predBody.appendChild(tr);
+                });
+                
+            } else {
+                // ===== EARTHQUAKE MODE =====
+                const raw = snap.raw_data || {};
+                const hypo = raw.hypocenter || {};
+                
+                document.getElementById('valTime').innerText = raw.time || "Unknown";
+                document.getElementById('valLoc').innerText = hypo.name || "Unknown";
+                document.getElementById('valMag').innerText = hypo.magnitude || "-";
+                
+                let scale = raw.max_scale || 0;
+                let scaleStr = scale;
+                if(scale === 45) scaleStr = "5弱";
+                else if(scale === 50) scaleStr = "5強";
+                else if(scale === 55) scaleStr = "6弱";
+                else if(scale === 60) scaleStr = "6強";
+                else if(scale === 70) scaleStr = "7";
+                else scaleStr = (scale/10).toFixed(0);
+                
+                document.getElementById('valScale').innerText = scaleStr;
+                
+                // Plot Actual Earthquake
+                const lat = hypo.latitude;
+                const lon = hypo.longitude;
+                
+                if(lat && lon && lat != -200) {
+                    map.setView([lat, lon], 6);
+                    L.circle([lat, lon], {
+                        color: '#ff5e3a',
+                        fillColor: '#ff5e3a',
+                        fillOpacity: 0.7,
+                        radius: 20000
+                    }).addTo(layerGroup)
+                    .bindPopup(`<b>${hypo.name}</b><br>M${hypo.magnitude} / Int:${scaleStr}`).openPopup();
+                }
+                
+                // Plot Predictions
+                const predictions = snap.predictions || [];
+                predictions.forEach(p => {
+                    let color = "#50e3c2";
+                    if(p.probability > 70) color = "#ff0055";
+                    else if(p.probability > 50) color = "#f5a623";
+                    
+                    L.circle([p.lat, p.lon], {
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.2,
+                        dashArray: '10, 10',
+                        weight: 2,
+                        radius: 50000
+                    }).addTo(predictionLayerGroup)
+                    .bindPopup(`<b>🔮 Prediction: ${p.region}</b><br>Prob: ${p.probability}%<br>Est. Mag: ${p.estimated_mag}`);
+                });
+                
+                // Points Table (Earthquake)
+                const tbody = document.getElementById('pointsTableBody');
+                tbody.innerHTML = "";
+                const points = raw.points || [];
+                points.sort((a,b) => b.scale - a.scale);
+                
+                points.forEach(p => {
+                    let s = p.scale;
+                    let sStr = s;
+                    if(s === 45) sStr = "5-";
+                    else if(s === 50) sStr = "5+";
+                    else if(s === 55) sStr = "6-";
+                    else if(s === 60) sStr = "6+";
+                    else if(s === 70) sStr = "7";
+                    else sStr = (s/10).toFixed(0);
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${p.addr}</td><td>${sStr}</td>`;
+                    tbody.appendChild(tr);
+                });
+                
+                // Prediction Table (Earthquake)
+                const predBody = document.getElementById('predictionTableBody');
+                predBody.innerHTML = "";
+                
+                if(predictions.length === 0) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td colspan="5" style="text-align:center; color:#50e3c2;">✅ 現在、高リスクの地殻歪みは検出されていません</td>`;
+                    predBody.appendChild(tr);
+                } else {
+                    predictions.forEach(p => {
+                        const tr = document.createElement('tr');
+                        let colorStyle = "";
+                        if(p.probability > 70) colorStyle = "color:#ff0055; font-weight:bold;";
+                        else if(p.probability > 50) colorStyle = "color:#f5a623;";
+                        
+                        const torsionVal = p.torsion !== undefined ? p.torsion : "-";
+                        tr.innerHTML = `
+                            <td>${p.region}</td>
+                            <td style="color:#50e3c2;">${torsionVal}</td>
+                            <td style="${colorStyle}">${p.probability}%</td>
+                            <td>M${p.estimated_mag}</td>
+                            <td style="color:#aaa;">${p.time_horizon || "-"}</td>
+                        `;
+                        predBody.appendChild(tr);
+                    });
+                }
+            }
+            
+            // Load logs
+            fetchAlerts();
+        }
+        
+        async function fetchAlerts() {
+            const res = await fetch('/api/alerts');
+            const alerts = await res.json();
+            const tbody = document.getElementById('alertHistoryBody');
+            tbody.innerHTML = "";
+            
+            if(alerts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">履歴なし</td></tr>';
+                return;
+            }
+            
+            alerts.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color:#aaa;">${a.timestamp}</td>
+                    <td>${a.region}</td>
+                    <td>M${a.gup}</td>
+                    <td style="color:#ff5e3a;">${a.risk_label}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Init
+        fetchData('now');
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            console.log('[Auto-Refresh] Updating data...');
+            fetchData('now');
+        }, 30000);
+    </script>
+</body>
+</html>
