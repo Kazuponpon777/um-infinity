@@ -81,9 +81,10 @@
             <div class="card"><h3 id="labelCard3">マグニチュード (Mag)</h3><div class="val" id="valMag">---</div></div>
             <div class="card"><h3 id="labelCard4">最大震度 (Max Int)</h3><div class="val" id="valScale">---</div></div>
             <div class="card" style="background:linear-gradient(135deg,#1a1a2e,#16213e); border:1px solid #50e3c2;">
-                <h3 style="color:#50e3c2;">⪯ V20 Torsion Index</h3>
+                <h3 style="color:#50e3c2;">⪯ V21 萃点指数</h3>
                 <div class="val" id="valTorsion" style="color:#50e3c2;">---</div>
                 <div class="desc" id="valCyclic">Cyclic: ---</div>
+                <div class="desc" id="valConsistent" style="font-size:0.7em;">---</div>
             </div>
         </div>
         
@@ -225,14 +226,18 @@
             
             const mode = snap.mode || 'earthquake';
             
-            // V20 Torsion display (works for both modes)
-            if(snap.v20_torsion !== undefined) {
-                document.getElementById('valTorsion').innerText = `τ = ${snap.v20_torsion} / 137`;
-                document.getElementById('valCyclic').innerText = `Cyclic: ×${snap.v20_cyclic}`;
+            // V21 萃点 Torsion display (works for both modes)
+            if(snap.v21_torsion !== undefined) {
+                document.getElementById('valTorsion').innerText = `τ = ${snap.v21_torsion} / 137`;
+                document.getElementById('valCyclic').innerText = `Cyclic: ×${snap.v21_cyclic}`;
+                document.getElementById('valConsistent').innerText = snap.v21_consistent ? "✓ 整合性確認" : "⚠ 未確認";
+                document.getElementById('valConsistent').style.color = snap.v21_consistent ? "#50e3c2" : "#f5a623";
             } else if(snap.predictions && snap.predictions[0] && snap.predictions[0]._meta) {
                 const meta = snap.predictions[0]._meta;
                 document.getElementById('valTorsion').innerText = `τ = ${meta.total_torsion} / 137`;
                 document.getElementById('valCyclic').innerText = `Cyclic: ×${meta.cyclic_modifier}`;
+                document.getElementById('valConsistent').innerText = meta.is_consistent ? "✓ 整合性確認" : "⚠ 未確認";
+                document.getElementById('valConsistent').style.color = meta.is_consistent ? "#50e3c2" : "#f5a623";
             }
             
             layerGroup.clearLayers();

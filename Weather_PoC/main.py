@@ -88,25 +88,32 @@ def analyze_snapshot(target_dt=None):
         enriched_results.append(res)
     
     # =========================================================================
-    # UM_Infinity_V20: Atmospheric Torsion Calculation
+    # UM_Infinity_V21: 萃点 (Suiten) Atmospheric Observation
     # =========================================================================
     import math
-    # Torsion = Σ(|GUP| × instability_factor)
-    # Cyclic modifier based on time of day (S1 model)
+    CONSTANT_137 = 137  # Universe resolution threshold
+    
+    # V21: UniverseTime cyclic modifier
     hour = datetime.datetime.now().hour
     phase = (hour - 6) * math.pi / 6
     cyclic_modifier = 1.0 + 0.2 * abs(math.sin(phase))
     
+    # V21: Calculate SuitenObservation torsion values
     total_torsion = 0
     for res in enriched_results:
-        instability = abs(res.get('hydro_potential', 0)) / 50.0  # Normalized
-        torsion_contrib = abs(res.get('grand_potential', 0)) * instability
-        total_torsion += torsion_contrib
+        # parameterized_torsion: instability × GUP
+        instability = abs(res.get('hydro_potential', 0)) / 50.0
+        torsion_value = int(abs(res.get('grand_potential', 0)) * instability)
+        res['torsion_value'] = torsion_value  # Add to result
+        total_torsion += torsion_value
     
-    # Scale to 137 threshold
+    # Apply cyclic modifier
     total_torsion = round(total_torsion * cyclic_modifier, 2)
+    
+    # V21: Consistency check (complexity≡137 ∧ torsion≠0)
+    is_consistent = (CONSTANT_137 == 137) and (total_torsion != 0)
         
-    # Return Snapshot with V20 metadata
+    # Return Snapshot with V21 metadata
     return {
         "timestamp": obs_time.strftime('%Y-%m-%d %H:%M:%S'),
         "display_name": f"{obs_time.strftime('%m/%d %H:%M')} (データ)",
@@ -115,10 +122,12 @@ def analyze_snapshot(target_dt=None):
         "urban": urban_factor,
         "bio": bio_factor,
         "results": sorted(enriched_results, key=lambda x: abs(x['grand_potential']), reverse=True)[:50],
-        # V20 Metadata
-        "v20_torsion": total_torsion,
-        "v20_cyclic": round(cyclic_modifier, 2),
-        "v20_threshold": 137
+        # V21 Metadata
+        "v21_torsion": total_torsion,
+        "v21_cyclic": round(cyclic_modifier, 2),
+        "v21_threshold": CONSTANT_137,
+        "v21_consistent": is_consistent,
+        "version": "V21"
     }
 
 def main():

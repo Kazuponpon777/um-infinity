@@ -53,14 +53,15 @@ import math
 import fetch_earthquake
 
 # =========================================================================
-# UM_Infinity_V20 Framework Functions
+# UM_Infinity_V21 Framework Functions (萃点システム)
 # =========================================================================
 
-def calculate_torsion(history_data, time_window_hours=24):
+CONSTANT_137 = 137  # Universe resolution threshold
+
+def suiten_observation(history_data, time_window_hours=24):
     """
-    UM_Infinity_V20: Calculate Crust Torsion (地殻歪み指数).
-    Torsion = Σ(magnitude × frequency_deviation)
-    where frequency_deviation = (events_in_region / expected_events) - 1
+    UM_Infinity_V21: SuitenObservation (萃点観測)
+    Returns observation records with torsion-value and prediction-prob
     """
     now = datetime.datetime.now()
     region_data = {}
@@ -77,48 +78,63 @@ def calculate_torsion(history_data, time_window_hours=24):
         mag = q.get('magnitude', 0) or 0
         
         if region not in region_data:
-            region_data[region] = {"count": 0, "total_mag": 0, "lat": q.get('lat'), "lon": q.get('lon'), "full_name": q.get('name', 'Unknown')}
+            region_data[region] = {
+                "count": 0, "total_mag": 0, 
+                "lat": q.get('lat'), "lon": q.get('lon'), 
+                "full_name": q.get('name', 'Unknown')
+            }
         region_data[region]["count"] += 1
         region_data[region]["total_mag"] += mag
     
-    # Calculate torsion per region
-    # Expected events: 1 per 24h as baseline (scaled by time_window)
+    # Calculate SuitenObservation per region
     expected_events = max(1, time_window_hours / 24)
     
-    torsion_results = []
+    observations = []
     for region, data in region_data.items():
         freq_deviation = (data["count"] / expected_events) - 1
-        torsion = data["total_mag"] * freq_deviation
-        if torsion > 0:  # Only consider positive torsion (accumulating stress)
-            torsion_results.append({
+        torsion_value = int(data["total_mag"] * freq_deviation)  # ℤ in V21
+        
+        if torsion_value > 0:
+            observations.append({
                 "region": data["full_name"],
                 "lat": data["lat"],
                 "lon": data["lon"],
-                "torsion": round(torsion, 2),
+                "torsion_value": torsion_value,  # V21: SuitenObservation.torsion-value
                 "count": data["count"],
                 "avg_mag": round(data["total_mag"] / data["count"], 1) if data["count"] > 0 else 0
             })
     
-    return sorted(torsion_results, key=lambda x: x["torsion"], reverse=True)
+    return sorted(observations, key=lambda x: x["torsion_value"], reverse=True)
 
-def cyclic_risk_modifier(hour=None):
+def parameterized_torsion(r, observation):
     """
-    UM_Infinity_V20: S1 Cyclic Time Model.
-    Risk oscillates following cosmic rhythm (peaks at 6:00 and 18:00 JST).
-    Returns: modifier between 0.8 and 1.2
+    UM_Infinity_V21: parameterized-torsion
+    Returns: r * torsion-value (scaling factor)
+    """
+    return r * observation.get("torsion_value", 0)
+
+def cyclic_time_modifier(hour=None):
+    """
+    UM_Infinity_V21: UniverseTime (S1 循環的時間)
+    Linear order is impossible on S1 → cyclic risk pattern
     """
     if hour is None:
         hour = datetime.datetime.now().hour
-    # Sin wave with peaks at 6 and 18 (every 12 hours)
-    # Phase shift: peak at 6 → sin((hour - 6) * π / 6)
     phase = (hour - 6) * math.pi / 6
     modifier = 1.0 + 0.2 * abs(math.sin(phase))
     return round(modifier, 2)
 
-def generate_predictions_v20(history_data=None, usgs_data=None, time_window_hours=24):
+def is_consistent(complexity, torsion):
     """
-    UM_Infinity_V20: Torsion-based Earthquake Prediction.
-    Uses crust torsion index and cyclic time model with 137 threshold.
+    UM_Infinity_V21: Consistency check
+    Valid if: complexity ≡ 137 ∧ torsion ≠ 0
+    """
+    return complexity == CONSTANT_137 and torsion != 0
+
+def generate_predictions_v21(history_data=None, usgs_data=None, time_window_hours=24):
+    """
+    UM_Infinity_V21: 萃点ベースの地震予測システム
+    Uses SuitenObservation, parameterized-torsion, and consistency proof
     """
     if history_data is None:
         history_data = fetch_earthquake.get_earthquake_history(limit=100)
@@ -129,47 +145,48 @@ def generate_predictions_v20(history_data=None, usgs_data=None, time_window_hour
     horizon_labels = {24: "24h", 168: "1週間", 720: "1ヶ月", 4320: "半年", 8760: "1年"}
     horizon_label = horizon_labels.get(time_window_hours, f"{time_window_hours}h")
     
-    # 1. Calculate Torsion for all regions
-    torsion_data = calculate_torsion(history_data, time_window_hours)
+    # 1. V21: Get SuitenObservation (萃点観測)
+    observations = suiten_observation(history_data, time_window_hours)
     
-    # 2. Get cyclic risk modifier (S1 time model)
-    cyclic_mod = cyclic_risk_modifier()
+    # 2. V21: UniverseTime cyclic modifier
+    cyclic_mod = cyclic_time_modifier()
     
     # 3. Global correlation
     global_modifier = 0
     huge_quakes = [u for u in usgs_data if u['mag'] >= 7.0]
     if huge_quakes:
-        global_modifier = 15  # Increase risk if global M7+ detected
+        global_modifier = 15
     
-    # 4. Generate predictions using 137 threshold
+    # 4. V21: Generate predictions with parameterized_torsion
     predictions = []
     total_torsion = 0
     
-    for t in torsion_data:
-        torsion = t["torsion"]
+    for obs in observations:
+        # Apply parameterized torsion with r=1
+        torsion = parameterized_torsion(1, obs)
         total_torsion += torsion
         
-        # V20 Formula: probability = (torsion / 137) * 100 * cyclic_mod + global_mod
-        raw_prob = (torsion / 137) * 100 * cyclic_mod + global_modifier
+        # V21 Formula: probability based on 137 threshold
+        raw_prob = (torsion / CONSTANT_137) * 100 * cyclic_mod + global_modifier
         probability = min(99, max(10, int(raw_prob)))
         
-        # Estimated magnitude: average + 1.0 buffer
-        est_mag = t["avg_mag"] + 1.0
+        # Estimated magnitude
+        est_mag = obs["avg_mag"] + 1.0
         
         predictions.append({
-            "region": f"⟨V20⟩ {t['region']} (τ={t['torsion']})",
-            "lat": t["lat"],
-            "lon": t["lon"],
+            "region": f"⟨V21萃点⟩ {obs['region']} (τ={torsion})",
+            "lat": obs["lat"],
+            "lon": obs["lon"],
             "probability": probability,
             "estimated_mag": round(est_mag, 1),
-            "torsion": t["torsion"],
+            "torsion": torsion,
             "time_horizon": horizon_label
         })
     
-    # If no regional torsion, check Global Risk
+    # If no observations, check Global Risk
     if not predictions and global_modifier > 0:
         predictions.append({
-            "region": "⟨V20⟩ Global Seismic Alert (USGS M7+)",
+            "region": "⟨V21萃点⟩ Global Alert (USGS M7+)",
             "lat": 35.0,
             "lon": 140.0,
             "probability": 30 + global_modifier,
@@ -180,24 +197,29 @@ def generate_predictions_v20(history_data=None, usgs_data=None, time_window_hour
     
     predictions.sort(key=lambda x: x["probability"], reverse=True)
     
-    # Append total torsion as metadata
+    # V21: Check consistency (complexity≡137 ∧ torsion≠0)
+    consistency = is_consistent(CONSTANT_137, total_torsion)
+    
     return {
         "predictions": predictions,
         "total_torsion": round(total_torsion, 2),
         "cyclic_modifier": cyclic_mod,
-        "threshold": 137
+        "threshold": CONSTANT_137,
+        "is_consistent": consistency,
+        "version": "V21"
     }
 
 # Wrapper for backward compatibility
 def generate_predictions(history_data=None, usgs_data=None, time_window_hours=24):
-    result = generate_predictions_v20(history_data, usgs_data, time_window_hours)
-    # For backward compat, return just predictions list with torsion info embedded
+    result = generate_predictions_v21(history_data, usgs_data, time_window_hours)
     preds = result["predictions"]
-    # Add metadata to first item for UI access
     if preds:
         preds[0]["_meta"] = {
             "total_torsion": result["total_torsion"],
             "cyclic_modifier": result["cyclic_modifier"],
-            "threshold": result["threshold"]
+            "threshold": result["threshold"],
+            "is_consistent": result["is_consistent"],
+            "version": result["version"]
         }
     return preds
+
