@@ -51,6 +51,7 @@ import random
 import math
 
 import fetch_earthquake
+import fetch_space
 
 # =========================================================================
 # UM_Infinity_V23: Sirius Protocol (シリウス・プロトコル)
@@ -199,11 +200,18 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     # 2. V21: UniverseTime cyclic modifier
     cyclic_mod = cyclic_time_modifier()
     
-    # 3. Global correlation
+    # 3. Solar Flare / Space Weather Factor (NEW)
+    space_factor = fetch_space.get_solar_flux()
+    
+    # 4. Global correlation
     global_modifier = 0
     huge_quakes = [u for u in usgs_data if u['mag'] >= 7.0]
     if huge_quakes:
         global_modifier = 15
+    
+    # Space Factor adds to global_modifier (scaled)
+    # X-class flare (space_factor ~ 4.0) -> adds 20% bonus
+    global_modifier += int(space_factor * 5)
     
     # 4. V23: Generate predictions with Sector consciousness
     predictions = []
@@ -261,11 +269,12 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
         "predictions": predictions,
         "total_torsion": round(total_torsion, 2),
         "cyclic_modifier": cyclic_mod,
+        "space_factor": round(space_factor, 2),
         "threshold": FINE_STRUCTURE_CONSTANT_INV,
         "awaken": awaken_status,
         "sirius_proof": final_proof,
         "sector": global_sector.to_dict(),
-        "version": "V23"
+        "version": "V23+Solar"
     }
 
 # Wrapper for backward compatibility
