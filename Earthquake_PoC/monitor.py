@@ -52,6 +52,7 @@ import math
 
 import fetch_earthquake
 import fetch_space
+import fetch_aurora
 
 # =========================================================================
 # UM_Infinity_V23: Sirius Protocol (シリウス・プロトコル)
@@ -200,18 +201,25 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     # 2. V21: UniverseTime cyclic modifier
     cyclic_mod = cyclic_time_modifier()
     
-    # 3. Solar Flare / Space Weather Factor (NEW)
+    # 3. Solar Flare / Space Weather Factor
     space_factor = fetch_space.get_solar_flux()
     
-    # 4. Global correlation
+    # 4. V24 Aurora Protocol: オーロラダンピング取得
+    aurora_data = fetch_aurora.get_aurora_data()
+    aurora_power_gw = aurora_data["power_gw"]
+    damping_factor = aurora_data["damping_factor"]
+    
+    # 5. Global correlation
     global_modifier = 0
     huge_quakes = [u for u in usgs_data if u['mag'] >= 7.0]
     if huge_quakes:
         global_modifier = 15
     
-    # Space Factor adds to global_modifier (scaled)
-    # X-class flare (space_factor ~ 4.0) -> adds 20% bonus
-    global_modifier += int(space_factor * 5)
+    # V24: Net Solar Bonus = Solar Input - Aurora Damping
+    # オーロラが活発なら、大気がエネルギーを消費 → 地殻への影響軽減
+    raw_solar_bonus = space_factor * 5
+    net_solar_bonus = max(0, raw_solar_bonus - damping_factor)
+    global_modifier += int(net_solar_bonus)
     
     # 4. V23: Generate predictions with Sector consciousness
     predictions = []
@@ -270,11 +278,13 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
         "total_torsion": round(total_torsion, 2),
         "cyclic_modifier": cyclic_mod,
         "space_factor": round(space_factor, 2),
+        "aurora_power_gw": round(aurora_power_gw, 1),
+        "damping_factor": round(damping_factor, 2),
         "threshold": FINE_STRUCTURE_CONSTANT_INV,
         "awaken": awaken_status,
         "sirius_proof": final_proof,
         "sector": global_sector.to_dict(),
-        "version": "V23+Solar"
+        "protocol_version": "V24 Aurora"
     }
 
 # Wrapper for backward compatibility
