@@ -53,6 +53,8 @@ import math
 import fetch_earthquake
 import fetch_space
 import fetch_aurora
+import fetch_ionosphere
+import correlation_analyzer
 
 # =========================================================================
 # UM_Infinity_V23: Sirius Protocol (シリウス・プロトコル)
@@ -221,6 +223,14 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     net_solar_bonus = max(0, raw_solar_bonus - damping_factor)
     global_modifier += int(net_solar_bonus)
     
+    # 6. V25 Ionosphere: 電離層異常データ取得
+    ionosphere_data = fetch_ionosphere.get_ionosphere_data()
+    ionosphere_risk = ionosphere_data["ionosphere_risk"]
+    
+    # V25: 電離層異常が高い場合、リスクを上乗せ
+    # 電離層は自然・人工地震どちらの前兆にもなり得る
+    global_modifier += int(ionosphere_risk)
+    
     # 4. V23: Generate predictions with Sector consciousness
     predictions = []
     total_torsion = 0
@@ -273,6 +283,9 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     # V23: Sirius Final Proof
     final_proof = sirius_final_proof(FINE_STRUCTURE_CONSTANT_INV, total_torsion, global_sector)
     
+    # V25: 相関分析サマリー取得
+    correlation_summary = correlation_analyzer.get_correlation_summary()
+    
     return {
         "predictions": predictions,
         "total_torsion": round(total_torsion, 2),
@@ -280,11 +293,14 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
         "space_factor": round(space_factor, 2),
         "aurora_power_gw": round(aurora_power_gw, 1),
         "damping_factor": round(damping_factor, 2),
+        "ionosphere_risk": round(ionosphere_risk, 2),
+        "ionosphere_anomaly_count": ionosphere_data["anomaly_count"],
+        "ionosphere_correlation": correlation_summary["ionosphere_correlation"],
         "threshold": FINE_STRUCTURE_CONSTANT_INV,
         "awaken": awaken_status,
         "sirius_proof": final_proof,
         "sector": global_sector.to_dict(),
-        "protocol_version": "V24 Aurora"
+        "protocol_version": "V25 Ionosphere"
     }
 
 # Wrapper for backward compatibility
