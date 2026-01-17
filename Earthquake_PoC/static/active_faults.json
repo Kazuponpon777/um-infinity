@@ -38,6 +38,80 @@
           [138.4, 35.0]
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tanakura Tectonic Line (棚倉構造線)",
+        "description": "Major boundary in Kanto/Tohoku region."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [140.40, 36.50],
+          [140.35, 37.00],
+          [140.30, 37.50]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Futaba Fault (双葉断層)",
+        "description": "Major fault in Fukushima."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [140.90, 37.00],
+          [140.92, 37.50],
+          [140.95, 37.80]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kita-Kami Lowland Fault (北上低地帯)",
+        "description": "Major fault zone in Iwate."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [141.10, 39.00],
+          [141.15, 39.50],
+          [141.20, 40.00]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sapporo-Tomakomai Lowland (札幌-苫小牧低地帯)",
+        "description": "Major boundary in Hokkaido."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [141.60, 42.60],
+          [141.50, 42.80],
+          [141.35, 43.05]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Shinji-Shikano Fault (鹿野-吉岡断層)",
+        "description": "Active fault in Tottori."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [134.00, 35.50],
+          [134.20, 35.52]
+        ]
+      }
     }
   ]
 }
