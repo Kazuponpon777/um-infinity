@@ -115,6 +115,26 @@
                 <div class="desc" id="valConsistent" style="font-size:0.7em;">Awaken: ---</div>
             </div>
         </div>
+
+        <!-- NEW: Space Weather Section -->
+        <h2 style="color:#50e3c2; border-bottom: 1px solid #50e3c2;">🌌 Cosmic Environment (宇宙天気)</h2>
+        <div class="factors">
+            <div class="card" style="border:1px solid #ffd700;">
+                <h3 style="color:#ffd700;">☀️ Solar Flux</h3>
+                <div class="val" id="valSolar" style="color:#ffd700;">---</div>
+                <div class="desc" id="descSolar">Space Factor</div>
+            </div>
+            <div class="card" style="border:1px solid #00ff00;">
+                <h3 style="color:#00ff00;">🌠 Aurora Power</h3>
+                <div class="val" id="valAurora" style="color:#00ff00;">---</div>
+                <div class="desc" id="descAurora">Damping: ---</div>
+            </div>
+             <div class="card" style="border:1px solid #00ffff;">
+                <h3 style="color:#00ffff;">📡 Ionosphere (NICT)</h3>
+                <div class="val" id="valIono" style="color:#00ffff;">---</div>
+                <div class="desc" id="descIono">Risk Level</div>
+            </div>
+        </div>
         
         <div id="map"></div>
         
@@ -292,6 +312,30 @@
                 document.getElementById('valCyclic').innerText = `Cyclic: ×${meta.cyclic_modifier}`;
                 document.getElementById('valConsistent').innerText = `Awaken: ${meta.awaken} | Sirius: ${meta.sirius_proof ? '✓' : '⚠'}`;
                 document.getElementById('valConsistent').style.color = meta.sirius_proof ? "#50e3c2" : "#f5a623";
+                
+                // Populate Space Weather (Cosmic Environment)
+                if(document.getElementById('valSolar')) {
+                    const solar = meta.space_factor || 0;
+                    document.getElementById('valSolar').innerText = solar.toFixed(2);
+                    
+                    const aurora = meta.aurora_power_gw || 0;
+                    const damping = meta.damping_factor || 0;
+                    document.getElementById('valAurora').innerText = `${aurora.toFixed(1)}GW`;
+                    document.getElementById('descAurora').innerText = `Damping: -${damping.toFixed(2)}`;
+                    
+                    const ionoRisk = meta.ionosphere_risk || 0;
+                    const ionoLevel = meta.ionosphere_level || 0;
+                    const ionoSource = (meta.ionosphere_source || 'NICT').split(' ')[0]; // Shorten
+                    
+                    let ionoColor = "#00ffff"; // Cyan
+                    if(ionoLevel >= 3) ionoColor = "#ff0055"; // Red
+                    else if(ionoLevel == 2) ionoColor = "#f5a623"; // Orange
+                    else if(ionoLevel == 1) ionoColor = "#ffff00"; // Yellow
+                    
+                    document.getElementById('valIono').style.color = ionoColor;
+                    document.getElementById('valIono').innerText = `${ionoRisk.toFixed(1)}`;
+                    document.getElementById('descIono').innerText = `Lv.${ionoLevel} / ${ionoSource}`;
+                }
             }
             
             layerGroup.clearLayers();

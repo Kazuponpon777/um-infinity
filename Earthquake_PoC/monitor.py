@@ -53,7 +53,8 @@ import math
 import fetch_earthquake
 import fetch_space
 import fetch_aurora
-import fetch_ionosphere
+# import fetch_ionosphere # Deprecated: US Data
+import fetch_nict       # New: Japan Data
 import correlation_analyzer
 
 # =========================================================================
@@ -223,12 +224,13 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     net_solar_bonus = max(0, raw_solar_bonus - damping_factor)
     global_modifier += int(net_solar_bonus)
     
-    # 6. V25 Ionosphere: 電離層異常データ取得
-    ionosphere_data = fetch_ionosphere.get_ionosphere_data()
-    ionosphere_risk = ionosphere_data["ionosphere_risk"]
+    # 6. V25 Ionosphere: 電離層異常データ取得 (Japan Localized)
+    # ionosphere_data = fetch_ionosphere.get_ionosphere_data()
+    ionosphere_data = fetch_nict.get_nict_data()
+    ionosphere_risk = ionosphere_data["risk_score"]
     
     # V25: 電離層異常が高い場合、リスクを上乗せ
-    # 電離層は自然・人工地震どちらの前兆にもなり得る
+    # NICT Alert (Level 3=10.0) implies immediate danger
     global_modifier += int(ionosphere_risk)
     
     # 4. V23: Generate predictions with Sector consciousness
@@ -293,14 +295,16 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
         "space_factor": round(space_factor, 2),
         "aurora_power_gw": round(aurora_power_gw, 1),
         "damping_factor": round(damping_factor, 2),
+        "damping_factor": round(damping_factor, 2),
         "ionosphere_risk": round(ionosphere_risk, 2),
-        "ionosphere_anomaly_count": ionosphere_data["anomaly_count"],
+        "ionosphere_source": ionosphere_data.get("source", "Unknown"),
+        "ionosphere_level": ionosphere_data.get("ionosphere_level", 0),
         "ionosphere_correlation": correlation_summary["ionosphere_correlation"],
         "threshold": FINE_STRUCTURE_CONSTANT_INV,
         "awaken": awaken_status,
         "sirius_proof": final_proof,
         "sector": global_sector.to_dict(),
-        "protocol_version": "V25 Ionosphere"
+        "protocol_version": "V25 Ionosphere (Japan)"
     }
 
 # Wrapper for backward compatibility
@@ -317,9 +321,12 @@ def generate_predictions(history_data=None, usgs_data=None, time_window_hours=24
             "sector": result["sector"],
             "version": result["protocol_version"],
             # V24/V25 Additional Meta
+            "space_factor": result.get("space_factor", 0),
             "aurora_power_gw": result.get("aurora_power_gw", 0),
             "damping_factor": result.get("damping_factor", 0),
             "ionosphere_risk": result.get("ionosphere_risk", 0),
-            "ionosphere_anomaly_count": result.get("ionosphere_anomaly_count", 0)
+            "ionosphere_level": result.get("ionosphere_level", 0),
+            "ionosphere_source": result.get("ionosphere_source", "Unknown"),
+            "location": "Japan/Aichi/Toyohashi"
         }
     return preds
