@@ -1,0 +1,43 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Median Tectonic Line (中央構造線)",
+        "description": "Japan's longest fault line. Passes directly through Toyohashi."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [130.4, 32.5],
+          [131.5, 33.2],
+          [133.0, 33.8],
+          [134.5, 34.2],
+          [135.5, 34.4],
+          [137.0, 34.6],
+          [137.39, 34.76],
+          [138.0, 35.0],
+          [138.2, 35.5]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Itoigawa-Shizuoka Tectonic Line (糸魚川静岡構造線)",
+        "description": "Major fault zone along Fossa Magna."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [137.85, 37.04],
+          [137.9, 36.5],
+          [138.0, 36.0],
+          [138.2, 35.6],
+          [138.4, 35.0]
+        ]
+      }
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Earthquake Monitor System</title>
+    <title>UM-Infinity V25 Monitor</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -84,8 +84,9 @@
         
         <!-- Mode Toggle -->
         <div class="controls-area" style="justify-content:center; gap:10px;">
-            <button id="modeEarthquake" onclick="setMode('earthquake')" style="background:#ff5e3a;">🌍 地震 (Earthquake)</button>
-            <button id="modeWeather" onclick="setMode('weather')">🌦️ 天気 (Weather)</button>
+            <button id="modeEarthquake" onclick="setMode('earthquake')" style="background:#ff5e3a;">🌍 地震</button>
+            <button id="modeWeather" onclick="setMode('weather')">🌦️ 天気</button>
+            <button id="btnFaults" onclick="toggleFaults()" style="background:#444; border:1px solid #777;">📉 活断層</button>
         </div>
         
         <div class="controls-area">
@@ -109,7 +110,7 @@
             <div class="card"><h3 id="labelCard3">マグニチュード (Mag)</h3><div class="val" id="valMag">---</div></div>
             <div class="card"><h3 id="labelCard4">最大震度 (Max Int)</h3><div class="val" id="valScale">---</div></div>
             <div class="card" style="background:linear-gradient(135deg,#1a1a2e,#16213e); border:1px solid #50e3c2;">
-                <h3 style="color:#50e3c2;">☆ V23 Sirius</h3>
+                <h3 style="color:#50e3c2;">☆ V25 Ionosphere</h3>
                 <div class="val" id="valTorsion" style="color:#50e3c2;">---</div>
                 <div class="desc" id="valCyclic">Cyclic: ---</div>
                 <div class="desc" id="valConsistent" style="font-size:0.7em;">Awaken: ---</div>
@@ -201,6 +202,49 @@
         }).addTo(map);
         var layerGroup = L.layerGroup().addTo(map);
         var predictionLayerGroup = L.layerGroup().addTo(map);
+        var faultLineLayerGroup = L.layerGroup(); // Not added by default (Toggle)
+        
+        // Active Faults Control
+        var showFaults = false;
+        
+        async function loadFaults() {
+            try {
+                const res = await fetch('/static/active_faults.json');
+                if(!res.ok) throw new Error("Failed to load faults");
+                const geoJson = await res.json();
+                
+                L.geoJSON(geoJson, {
+                    style: {
+                        color: "#ff0000",
+                        weight: 2,
+                        opacity: 0.6
+                    },
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties && feature.properties.name) {
+                            layer.bindPopup(`<b>⚠ ${feature.properties.name}</b><br>${feature.properties.description}`);
+                        }
+                    }
+                }).addTo(faultLineLayerGroup);
+                
+                console.log("Fault lines loaded.");
+            } catch(e) {
+                console.error("Error loading faults:", e);
+            }
+        }
+        
+        // Initial load
+        loadFaults();
+        
+        function toggleFaults() {
+            showFaults = !showFaults;
+            if(showFaults) {
+                map.addLayer(faultLineLayerGroup);
+                document.getElementById('btnFaults').style.background = "#ff0000";
+            } else {
+                map.removeLayer(faultLineLayerGroup);
+                document.getElementById('btnFaults').style.background = "#444";
+            }
+        }
         
         // Mode state
         var currentMode = 'earthquake';
@@ -211,7 +255,7 @@
             document.getElementById('modeEarthquake').style.background = (mode === 'earthquake') ? '#ff5e3a' : '#555';
             document.getElementById('modeWeather').style.background = (mode === 'weather') ? '#50e3c2' : '#555';
             // Update title
-            document.getElementById('mainTitle').innerText = (mode === 'earthquake') ? 'UM∞N 地震予測システム' : 'UM∞N 天気予測システム';
+            document.getElementById('mainTitle').innerText = (mode === 'earthquake') ? 'UM∞N V25 地震予測システム (Japan)' : 'UM∞N V25 天気予測システム';
             // Show/hide earthquake-specific controls
             document.getElementById('horizonControls').style.display = (mode === 'earthquake') ? 'flex' : 'none';
             
