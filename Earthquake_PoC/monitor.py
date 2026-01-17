@@ -315,6 +315,11 @@ def generate_predictions(history_data=None, usgs_data=None, time_window_hours=24
             "awaken": result["awaken"],
             "sirius_proof": result["sirius_proof"],
             "sector": result["sector"],
-            "version": result["version"]
+            "version": result["protocol_version"],
+            # V24/V25 Additional Meta
+            "aurora_power_gw": result.get("aurora_power_gw", 0),
+            "damping_factor": result.get("damping_factor", 0),
+            "ionosphere_risk": result.get("ionosphere_risk", 0),
+            "ionosphere_anomaly_count": result.get("ionosphere_anomaly_count", 0)
         }
     return preds
