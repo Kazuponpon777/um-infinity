@@ -135,6 +135,11 @@
                 <div class="val" id="valIono" style="color:#00ffff;">---</div>
                 <div class="desc" id="descIono">Risk Level</div>
             </div>
+             <div class="card" style="border:1px solid #ff00ff;">
+                <h3 style="color:#ff00ff;">🛰️ Land Deformation</h3>
+                <div class="val" id="valJaxa" style="color:#ff00ff;">---</div>
+                <div class="desc" id="descJaxa">JAXA ALOS-2</div>
+            </div>
         </div>
         
         <div id="map"></div>
@@ -379,6 +384,22 @@
                     document.getElementById('valIono').style.color = ionoColor;
                     document.getElementById('valIono').innerText = `${ionoRisk.toFixed(1)}`;
                     document.getElementById('descIono').innerText = `Lv.${ionoLevel} / ${ionoSource}`;
+                    
+                    // JAXA SAR
+                    const sarDetected = meta.sar_detected || false;
+                    const sarSource = (meta.sar_source || "JAXA").replace("JAXA ALOS-2/4 (Daichi)", "ALOS-2/4");
+                    
+                    if(sarDetected) {
+                        document.getElementById('valJaxa').innerText = "⚠ DEFORMED";
+                        document.getElementById('valJaxa').style.color = "#ff0055"; // Red
+                        // Visual Alert
+                        document.getElementById('valJaxa').style.animation = "blink 1s infinite"; 
+                    } else {
+                        document.getElementById('valJaxa').innerText = "Normal";
+                        document.getElementById('valJaxa').style.color = "#50e3c2"; // Greenish
+                        document.getElementById('valJaxa').style.animation = "none";
+                    }
+                    document.getElementById('descJaxa').innerText = sarSource;
                 }
             }
             

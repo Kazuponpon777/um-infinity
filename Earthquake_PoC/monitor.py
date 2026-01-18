@@ -55,6 +55,7 @@ import fetch_space
 import fetch_aurora
 # import fetch_ionosphere # Deprecated: US Data
 import fetch_nict       # New: Japan Data
+import fetch_jaxa       # New: JAXA SAR Data
 import correlation_analyzer
 
 # =========================================================================
@@ -233,6 +234,17 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     # NICT Alert (Level 3=10.0) implies immediate danger
     global_modifier += int(ionosphere_risk)
     
+    # 7. V25 JAXA SAR: 地殻変動データ取得 (New)
+    # 物理的な地面の変動(隆起・沈降)は即時リスク
+    sar_status = fetch_jaxa.get_sar_status()
+    sar_detected = sar_status["detected"]
+    sar_multiplier = sar_status["risk_multiplier"]
+    
+    # Apply SAR Multiplier to Global Modifier (Scaling logic)
+    # If SAR detects deformation, boost the entire risk significantly
+    if sar_detected:
+        global_modifier = int(global_modifier * sar_multiplier)
+    
     # 4. V23: Generate predictions with Sector consciousness
     predictions = []
     total_torsion = 0
@@ -299,6 +311,8 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
         "ionosphere_risk": round(ionosphere_risk, 2),
         "ionosphere_source": ionosphere_data.get("source", "Unknown"),
         "ionosphere_level": ionosphere_data.get("ionosphere_level", 0),
+        "sar_detected": sar_detected,
+        "sar_source": sar_status["source"],
         "ionosphere_correlation": correlation_summary["ionosphere_correlation"],
         "threshold": FINE_STRUCTURE_CONSTANT_INV,
         "awaken": awaken_status,
@@ -326,7 +340,11 @@ def generate_predictions(history_data=None, usgs_data=None, time_window_hours=24
             "damping_factor": result.get("damping_factor", 0),
             "ionosphere_risk": result.get("ionosphere_risk", 0),
             "ionosphere_level": result.get("ionosphere_level", 0),
+            "ionosphere_risk": result.get("ionosphere_risk", 0),
+            "ionosphere_level": result.get("ionosphere_level", 0),
             "ionosphere_source": result.get("ionosphere_source", "Unknown"),
+            "sar_detected": result.get("sar_detected", False),
+            "sar_source": result.get("sar_source", "JAXA"),
             "location": "Japan/Aichi/Toyohashi"
         }
     return preds
