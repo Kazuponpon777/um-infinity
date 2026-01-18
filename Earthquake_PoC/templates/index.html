@@ -427,24 +427,43 @@
                 // Populate Space Weather (Cosmic Environment)
                 if(document.getElementById('valSolar')) {
                     const solar = meta.space_factor || 0;
-                    document.getElementById('valSolar').innerText = solar.toFixed(2);
+                    const solarTrend = meta.solar_trend || "→";
+                    const solarClass = meta.solar_class || "";
+                    
+                    let solarTrendColor = "#ffd700";
+                    if(solarTrend === "↗") solarTrendColor = "#ff5e3a"; // Red
+                    else if(solarTrend === "↘") solarTrendColor = "#50e3c2"; // Green
+                    
+                    document.getElementById('valSolar').innerHTML = `${solar.toFixed(2)} <span style="color:${solarTrendColor}">${solarTrend}</span>`;
+                    document.getElementById('descSolar').innerText = solarClass || "Space Factor";
                     
                     const aurora = meta.aurora_power_gw || 0;
                     const damping = meta.damping_factor || 0;
-                    document.getElementById('valAurora').innerText = `${aurora.toFixed(1)}GW`;
+                    const auroraTrend = meta.aurora_trend || "→";
+                    
+                    let auroraTrendColor = "#00ff00";
+                    if(auroraTrend === "↗") auroraTrendColor = "#ff5e3a";
+                    else if(auroraTrend === "↘") auroraTrendColor = "#50e3c2";
+                    
+                    document.getElementById('valAurora').innerHTML = `${aurora.toFixed(1)}GW <span style="color:${auroraTrendColor}">${auroraTrend}</span>`;
                     document.getElementById('descAurora').innerText = `Damping: -${damping.toFixed(2)}`;
                     
                     const ionoRisk = meta.ionosphere_risk || 0;
                     const ionoLevel = meta.ionosphere_level || 0;
                     const ionoSource = (meta.ionosphere_source || 'NICT').split(' ')[0]; // Shorten
+                    const ionoTrend = meta.ionosphere_trend || "→";
                     
                     let ionoColor = "#00ffff"; // Cyan
                     if(ionoLevel >= 3) ionoColor = "#ff0055"; // Red
                     else if(ionoLevel == 2) ionoColor = "#f5a623"; // Orange
                     else if(ionoLevel == 1) ionoColor = "#ffff00"; // Yellow
                     
+                    let ionoTrendColor = "#888";
+                    if(ionoTrend === "↗") ionoTrendColor = "#ff0055"; // Risk Rising
+                    else if(ionoTrend === "↘") ionoTrendColor = "#50e3c2"; // Risk Dropping
+                    
                     document.getElementById('valIono').style.color = ionoColor;
-                    document.getElementById('valIono').innerText = `${ionoRisk.toFixed(1)}`;
+                    document.getElementById('valIono').innerHTML = `${ionoRisk.toFixed(1)} <span style="color:${ionoTrendColor}">${ionoTrend}</span>`;
                     document.getElementById('descIono').innerText = `Lv.${ionoLevel} / ${ionoSource}`;
                     
                     // JAXA SAR

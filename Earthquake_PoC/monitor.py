@@ -57,6 +57,58 @@ import fetch_aurora
 import fetch_nict       # New: Japan Data
 import fetch_jaxa       # New: JAXA SAR Data
 import correlation_analyzer
+import json
+import os
+
+# =========================================================================
+# V25: Trend Persistence (トレンド永続化)
+# =========================================================================
+TREND_CACHE_FILE = os.path.join(os.path.dirname(__file__), "v25_trend_cache.json")
+_trend_cache = {}
+
+def _load_trend_cache():
+    global _trend_cache
+    if os.path.exists(TREND_CACHE_FILE):
+        try:
+            with open(TREND_CACHE_FILE, 'r') as f:
+                _trend_cache = json.load(f)
+        except:
+            _trend_cache = {}
+
+def _save_trend_cache():
+    try:
+        with open(TREND_CACHE_FILE, 'w') as f:
+            json.dump(_trend_cache, f)
+    except:
+        pass
+
+def get_trend(key, current_value, threshold=0.1):
+    """
+    Calculate trend arrow based on previous value.
+    Returns: "↗", "↘", or "→"
+    """
+    _load_trend_cache()
+    prev_value = _trend_cache.get(key, current_value)
+    delta = current_value - prev_value
+    
+    # Update cache
+    _trend_cache[key] = current_value
+    _save_trend_cache()
+    
+    if delta > threshold:
+        return "↗"  # Rising
+    elif delta < -threshold:
+        return "↘"  # Dropping
+    else:
+        return "→"  # Stable
+
+def get_solar_class(flux):
+    """Map flux factor to Solar Flare Class."""
+    if flux < 1.0: return "A-Class"
+    if flux < 1.5: return "B-Class"
+    if flux < 3.0: return "C-Class"
+    if flux < 5.0: return "M-Class"
+    return "X-Class"
 
 # =========================================================================
 # UM_Infinity_V23: Sirius Protocol (シリウス・プロトコル)
@@ -213,6 +265,11 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     aurora_power_gw = aurora_data["power_gw"]
     damping_factor = aurora_data["damping_factor"]
     
+    # V25: Calculate Trends (Trend Arrows)
+    solar_trend = get_trend("space_factor", space_factor, 0.1)
+    aurora_trend = get_trend("aurora_power_gw", aurora_power_gw, 5.0)
+    solar_class = get_solar_class(space_factor)
+    
     # 5. Global correlation
     global_modifier = 0
     huge_quakes = [u for u in usgs_data if u['mag'] >= 7.0]
@@ -229,6 +286,7 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     # ionosphere_data = fetch_ionosphere.get_ionosphere_data()
     ionosphere_data = fetch_nict.get_nict_data()
     ionosphere_risk = ionosphere_data["risk_score"]
+    ionosphere_trend = get_trend("ionosphere_risk", ionosphere_risk, 0.5)
     
     # V25: 電離層異常が高い場合、リスクを上乗せ
     # NICT Alert (Level 3=10.0) implies immediate danger
@@ -347,6 +405,10 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
         "sirius_proof": final_proof,
         "sector": global_sector.to_dict(),
         "filter_status": filter_status,
+        "solar_trend": solar_trend,
+        "aurora_trend": aurora_trend,
+        "ionosphere_trend": ionosphere_trend,
+        "solar_class": solar_class,
         "protocol_version": "V25 Ionosphere (Japan)"
     }
 
@@ -375,6 +437,11 @@ def generate_predictions(history_data=None, usgs_data=None, time_window_hours=24
             "sar_detected": result.get("sar_detected", False),
             "sar_source": result.get("sar_source", "JAXA"),
             "filter_status": result.get("filter_status", "Normal"),
+            # V25: Trend Arrows for Frontend
+            "solar_trend": result.get("solar_trend", "→"),
+            "aurora_trend": result.get("aurora_trend", "→"),
+            "ionosphere_trend": result.get("ionosphere_trend", "→"),
+            "solar_class": result.get("solar_class", ""),
             "location": "Japan/Aichi/Toyohashi"
         }
     return preds
