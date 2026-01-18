@@ -103,8 +103,39 @@ where:
 
 従来の乗算モデル（V23）に見られた「ベースリスク0の場合に警告が消える」問題を解消するため、V25では**加算型スタッキングモデル**を採用した。
 
-```python
-Final Risk = Base Risk + Structural Stress + Trigger Score
+### 3.3 バックエンド実装 (`monitor_v25.py`)
+
+V25では、単一の堅牢なスクリプト `monitor_v25.py` がシステムの核となる。
+
+#### 機能ハイライト
+1.  **Trend Vectorization (トレンド可視化)**
+    - 前回の実行結果を `v25_metrics_cache.json` に保存。
+    - 最新値と比較し、`↗` (上昇) `↘` (下降) `→` (横ばい) のアイコンを自動付与。
+    - これにより、数値の絶対値だけでなく「変化のモメンタム」を一目で把握可能にする。
+
+2.  **Solar Class & Alert Level判定**
+    - 太陽フラックス値から `M-Class`, `X-Class` 等を自動判定。
+    - トータルリスクスコアに基づき `NORMAL`, `CAUTION`, `WARNING`, `DANGER` を出力。
+
+3.  **JSON Output Schema**
+    フロントエンド（ダッシュボード）との完全な互換性を持つ以下のJSONを出力する。
+
+```json
+{
+  "version": "V25 Final",
+  "status": {
+    "solar": {"value": 2.18, "trend": "↗", "class": "M-Class"},
+    "aurora": {"value": 79.4, "trend": "↘", "damping": -5.8},
+    "ionosphere": {"value": 5.0, "trend": "→", "condition": "True Signal"}
+  },
+  "risk_metrics": {
+    "base": 10.0,
+    "structural": 20.0,
+    "trigger": 10.0,
+    "total_score": 40.0
+  },
+  "alert_level": "WARNING"
+}
 ```
 
 #### 1. Base Risk (背景ノイズ)
