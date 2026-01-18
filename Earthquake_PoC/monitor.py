@@ -223,7 +223,7 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     # オーロラが活発なら、大気がエネルギーを消費 → 地殻への影響軽減
     raw_solar_bonus = space_factor * 5
     net_solar_bonus = max(0, raw_solar_bonus - damping_factor)
-    global_modifier += int(net_solar_bonus)
+    # Double counting fix: do not add to global_modifier here
     
     # 6. V25 Ionosphere: 電離層異常データ取得 (Japan Localized)
     # ionosphere_data = fetch_ionosphere.get_ionosphere_data()
@@ -232,18 +232,46 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
     
     # V25: 電離層異常が高い場合、リスクを上乗せ
     # NICT Alert (Level 3=10.0) implies immediate danger
-    global_modifier += int(ionosphere_risk)
+    # Double counting fix: do not add to global_modifier here
     
-    # 7. V25 JAXA SAR: 地殻変動データ取得 (New)
-    # 物理的な地面の変動(隆起・沈降)は即時リスク
+    # -------------------------------------------------------------------------
+    # Task 2: JAXA Baseline (Structural Stress)
+    # -------------------------------------------------------------------------
     sar_status = fetch_jaxa.get_sar_status()
     sar_detected = sar_status["detected"]
-    sar_multiplier = sar_status["risk_multiplier"]
-    
-    # Apply SAR Multiplier to Global Modifier (Scaling logic)
-    # If SAR detects deformation, boost the entire risk significantly
+    structural_stress = 0
     if sar_detected:
-        global_modifier = int(global_modifier * sar_multiplier)
+        structural_stress = 20.0 # Fixed baseline for stress
+    
+    # -------------------------------------------------------------------------
+    # Task 3: Solar Cancel / True Signal Filter
+    # -------------------------------------------------------------------------
+    # Logic:
+    # A. Noise: Space Factor > 3.0 -> Ionosphere Risk * 0.2 (Suppressed)
+    # B. True Signal: Space Factor < 1.5 AND Risk > 5.0 -> Risk * 2.0 (Boosted)
+    
+    filter_status = "Normal"
+    final_ionosphere_risk = ionosphere_risk
+    
+    if space_factor > 3.0:
+        # Case A: Solar Noise
+        final_ionosphere_risk *= 0.2
+        filter_status = "Solar Cancelled"
+    elif space_factor < 1.5 and ionosphere_risk > 5.0:
+        # Case B: True Signal
+        final_ionosphere_risk *= 2.0
+        filter_status = "True Signal DETECTED"
+        
+    # Safety guard: max(0, value)
+    final_ionosphere_risk = max(0.0, final_ionosphere_risk)
+    
+    # -------------------------------------------------------------------------
+    # Calculate Total Risk (Stacking Model)
+    # -------------------------------------------------------------------------
+    # Global Modifier = Net Solar + Ionosphere + Structural Stress
+    
+    # We round to int for compatibility with downstream logic
+    global_modifier += int(net_solar_bonus + final_ionosphere_risk + structural_stress)
     
     # 4. V23: Generate predictions with Sector consciousness
     predictions = []
@@ -318,6 +346,7 @@ def generate_predictions_v23(history_data=None, usgs_data=None, time_window_hour
         "awaken": awaken_status,
         "sirius_proof": final_proof,
         "sector": global_sector.to_dict(),
+        "filter_status": filter_status,
         "protocol_version": "V25 Ionosphere (Japan)"
     }
 
@@ -345,6 +374,7 @@ def generate_predictions(history_data=None, usgs_data=None, time_window_hours=24
             "ionosphere_source": result.get("ionosphere_source", "Unknown"),
             "sar_detected": result.get("sar_detected", False),
             "sar_source": result.get("sar_source", "JAXA"),
+            "filter_status": result.get("filter_status", "Normal"),
             "location": "Japan/Aichi/Toyohashi"
         }
     return preds
