@@ -1,264 +1,245 @@
-# UM-Infinity V25 Integrated System Architecture
-## "Aurora-Ionosphere-Deformation Protocol" - 誤報ゼロ・見逃しゼロを目指すV25決定版
+# UM-Infinity V25: 地球を守る「宇宙気象」地震予測システム
 
-**Author:** AIアーキテクト部門  
+## Aurora-Ionosphere-Deformation Protocol — 誤報ゼロ・見逃しゼロを目指して
+
+**Author:** 八洲建設 AIアーキテクト部門  
 **Version:** V25 Final  
-**Date:** 2026-01-18  
+**Date:** 2026年1月18日  
 
 ---
 
-## Abstract
+## 🌏 はじめに — なぜ「宇宙」から地震を予測できるのか？
 
-本論文では、地震予測システム UM-Infinity の最新バージョン V25 について述べる。V25では、従来の宇宙天気・電離層分析に加え、**NICT（情報通信研究機構）** による日本国内電離層データ、および **JAXA（宇宙航空研究開発機構）** の衛星SARデータを統合した。また、中央構造線・南海トラフ等の活断層を可視化し、地質学的リスクと物理的変動（地殻変動）をリアルタイムで監視する体制を確立した。
+地震は「地面の下」で起きる現象です。  
+それなのに、なぜ**宇宙からのデータ**で予測できるのでしょうか？
 
-キーコンセプト:
-- **宇宙**: 太陽フレアとオーロラによるエネルギー分配
-- **大気**: NICTデータによる日本上空の電離層異常検知
-- **地殻**: JAXA SARによる物理的変動（隆起・沈降）の監視
-- **構造**: 活断層・海溝ラインの可視化によるリスクコンテキストの提供
+答えは、**地球がひとつの巨大なシステムである**という事実にあります。
 
----
+太陽から放たれたエネルギーは、
+1. **オーロラ**として大気圏で消費されるか、
+2. **電離層**という上空の電気的な層を乱すか、
+3. **地殻**に負荷をかけるか、
 
-## 1. Introduction
+のいずれかの形で地球に影響を与えます。
 
-### 1.1 背景
+UM-Infinity V25 は、この「エネルギーの流れ」を**リアルタイムで追跡**し、地震リスクを評価するシステムです。
 
-地震予測は未だ完全なソリューションが存在しない難問である。従来のアプローチは以下に分類される：
-
-1. **地震学的アプローチ**: 過去の地震データからパターンを抽出
-2. **地球物理学的アプローチ**: 地殻変動、GPS変位を監視
-3. **電磁気学的アプローチ**: 電離層異常、VLF伝搬異常を観測
-
-UM-Infinity V25 は、これらを統合し、さらに**太陽-地球結合系**の視点を追加することで、多層的なリスク評価を実現する。
-
-### 1.2 V25 の新規性
-
-| バージョン | 特徴 | データソース |
-| :--- | :--- | :--- |
-| V23 Sirius | 意識ベース予測、Sector三位一体モデル | NOAA, USGS |
-| V24 Aurora | エネルギー分配説、オーロラダンピング | NOAA SWPC |
-| **V25 Ionosphere** | **日本国内電離層 (NICT)**、地殻変動 (JAXA)、活断層可視化 | **NICT, JAXA** |
-
----
-
-## 2. Theoretical Framework
-
-### 2.1 エネルギー分配説 (Energy Partitioning)
-
-太陽からのエネルギー流入が地球に到達した際、そのエネルギーは複数の経路に分配される。
-
-```
-Solar Energy Input
-        │
-        ├── 大気圏消費 (オーロラ) ← V24 で導入
-        │
-        ├── 電離層擾乱 ← V25 で導入
-        │
-        └── 地殻への負荷 (地震リスク)
-```
-
-**数式モデル:**
-
-```
-Final Risk = max(0, Space Factor × 5 - Aurora Damping) + Ionosphere Risk
-
-where:
-- Space Factor: X線フラックスから算出 (0.0 ~ 4.0+)
-- Aurora Damping: オーロラパワーが閾値(50GW)を超えた分
-- Ionosphere Risk: TEC異常度から算出 (0.0 ~ 10.0)
-```
-
-### 2.2 電離層異常と地震の相関
-
-電離層TEC (Total Electron Content) は、地震発生の数日〜数時間前に異常を示すことが報告されている。
-
-**重要な発見:**  
-この前兆現象は、**自然発生地震**と**人工地震**（地下核実験、HAARP等の仮説を含む）の双方で観測される。つまり、**発生原因に関わらず、電離層異常は共通の「結果」として現れる**。
-
-```
-[Any Seismic Event Preparation]
-          │
-          ▼
-   電離層TEC異常 ← 観測可能な共通項
-          │
-          ▼
-    UM-Infinity V25 で検出
+```mermaid
+graph TD
+    A["☀️ 太陽エネルギー"] --> B["🌌 オーロラ（大気で消費）"]
+    A --> C["📡 電離層異常（前兆シグナル）"]
+    A --> D["🌍 地殻への負荷（地震リスク）"]
+    
+    B -->|エネルギー減衰| E["リスク低下"]
+    C -->|異常検知| F["⚠️ 警告発出"]
+    D -->|ストレス蓄積| F
 ```
 
 ---
 
-## 3. System Architecture
+## 🔬 科学的根拠 — 電離層と地震の関係
 
-### 3.1 データソース
+### 電離層異常は「地震の前触れ」
 
-| モジュール | データソース | 更新頻度 | 目的 |
-| :--- | :--- | :--- | :--- |
-| `fetch_space.py` | NOAA GOES X-ray | 1分毎 | 太陽活動 (Input) |
-| `fetch_aurora.py` | NOAA Kp-index | 3時間毎 | エネルギー損失 (Damping) |
-| `fetch_nict.py` | **NICT Ionosphere** | 15分毎 | 前兆現象検知 (Japan) |
-| `fetch_jaxa.py` | **JAXA ALOS-2/4** | イベント毎 | 物理的変動 (Deformation) |
-| `fetch_earthquake.py` | P2P地震情報 | リアルタイム | 結果検証 |
+地上約60〜1000kmにある**電離層**は、太陽放射によってイオン化した大気の層です。  
+この層の電子密度（TEC: Total Electron Content）は、**地震発生の数日〜数時間前に異常を示す**ことが世界中の研究機関によって報告されています。
 
-### 3.2 コアロジック (Additive Stacking Model)
+> **重要な発見:**  
+> 電離層異常は、自然地震・人工地震を問わず共通して観測される「結果」である。  
+> つまり、原因が何であれ、**電離層を監視すれば異常を検知できる**。
 
-従来の乗算モデル（V23）に見られた「ベースリスク0の場合に警告が消える」問題を解消するため、V25では**加算型スタッキングモデル**を採用した。
+### なぜ電離層が乱れるのか？
 
-### 3.3 バックエンド実装 (`monitor_v25.py`)
+地震前には、地殻内のストレスが高まると：
+- 岩石から**ラドンガス**が放出される
+- 地殻の圧電効果により**電磁波**が発生する
+- これらが大気を通じて電離層に影響を与える
 
-V25では、単一の堅牢なスクリプト `monitor_v25.py` がシステムの核となる。
+この現象を捉えることで、「地面の下」で何が起きているかを「空から」知ることができるのです。
 
-#### 機能ハイライト
-1.  **Trend Vectorization (トレンド可視化)**
-    - 前回の実行結果を `v25_metrics_cache.json` に保存。
-    - 最新値と比較し、`↗` (上昇) `↘` (下降) `→` (横ばい) のアイコンを自動付与。
-    - これにより、数値の絶対値だけでなく「変化のモメンタム」を一目で把握可能にする。
+---
 
-2.  **Solar Class & Alert Level判定**
-    - 太陽フラックス値から `M-Class`, `X-Class` 等を自動判定。
-    - トータルリスクスコアに基づき `NORMAL`, `CAUTION`, `WARNING`, `DANGER` を出力。
+## 🛰️ V25のデータソース — 宇宙機関との連携
 
-3.  **JSON Output Schema**
-    フロントエンド（ダッシュボード）との完全な互換性を持つ以下のJSONを出力する。
+UM-Infinity V25 は、日本の宇宙・通信インフラを最大限活用しています。
+
+| モジュール | データ提供元 | 監視対象 | 役割 |
+|:---|:---|:---|:---|
+| 🌞 `fetch_space.py` | NOAA GOES衛星 | 太陽X線フラックス | エネルギー入力の把握 |
+| 🌌 `fetch_aurora.py` | NOAA Kp指数 | オーロラ活動 | エネルギー消費の把握 |
+| 📡 `fetch_nict.py` | **NICT（情報通信研究機構）** | 日本上空の電離層 | 前兆現象の検知 |
+| 🛰️ `fetch_jaxa.py` | **JAXA ALOS-2/4 衛星** | 地殻変動（干渉SAR） | 物理的歪みの確認 |
+
+> **日本特化設計:**  
+> 従来の米国NOAA-TECデータから、**NICT（日本）**データへ移行することで、日本列島直下の電離層を高精度で監視できるようになりました。
+
+---
+
+## ⚙️ V25の心臓部 — 加算型スタッキングモデル
+
+### 従来の問題点
+
+旧バージョン（V23）では、リスク計算が「掛け算」でした。
+
+```
+従来: Final Risk = Base × Modifier × Trigger
+問題: Base = 0 の場合 → 何を掛けても 0 → 警告が出ない！
+```
+
+これでは、ベースリスクが低いときにJAXA SARで地殻変動を検知しても、警告が発せられませんでした。
+
+### V25の解決策：加算型モデル
+
+```python
+Final Risk = Base Risk + Structural Stress + Trigger Score
+```
+
+| 要素 | 内容 | 加算ポイント |
+|:---|:---|:---|
+| **Base Risk** | 過去の地震パターン、時間サイクル | 0〜30 |
+| **Structural Stress** | JAXA SARによる地殻変動検知 | **+20（固定）** |
+| **Trigger Score** | 太陽活動・電離層リスク | 0〜20 |
+
+この「足し算」方式により、**どの要素も独立してリスクに寄与**できるようになりました。
+
+---
+
+## 🎯 True Signal Filter — 誤報を防ぐ知能
+
+電離層が乱れる原因は「地震前兆」だけではありません。  
+**太陽嵐**が来れば、電離層は当然乱れます。
+
+V25は、これを**自動で識別**します。
+
+### フィルターの動作
+
+```mermaid
+flowchart TD
+    A["電離層異常 検知"] --> B{"太陽は荒れている？"}
+    B -->|"はい (Space Factor > 3.0)"| C["🔇 Solar Cancel: リスク×0.2"]
+    B -->|"いいえ (静穏)"| D{"異常レベルは高い？"}
+    D -->|"はい (Risk > 5.0)"| E["⚡ True Signal: リスク×2.0"]
+    D -->|"いいえ"| F["→ 通常処理"]
+    
+    C --> G["誤報回避 ✓"]
+    E --> H["厳重警戒 ⚠️"]
+```
+
+| ケース | 条件 | 判定 | 処理 |
+|:---|:---|:---|:---|
+| **Solar Cancel** | 太陽嵐中 (Factor > 3.0) | 太陽由来のノイズ | リスク **×0.2** (抑制) |
+| **True Signal** | 太陽静穏 (Factor < 1.5) + 高異常 | 地震前兆の可能性大 | リスク **×2.0** (増幅) |
+
+> **「嵐の前の静けさ」を見逃さない:**  
+> 太陽が静かなのに電離層だけが乱れている — これこそが最も注目すべき状況です。
+
+---
+
+## 📊 トレンド可視化 — 変化の「方向」を見る
+
+数値を見るだけでは、状況が「良くなっているのか」「悪くなっているのか」がわかりません。
+
+V25は、各指標に**トレンド矢印**を付与します。
+
+| 矢印 | 意味 | 表示色 |
+|:---:|:---|:---|
+| ↗ | 上昇中（リスク増大） | 🔴 赤 |
+| ↘ | 下降中（リスク低下） | 🟢 緑 |
+| → | 横ばい（変化なし） | ⚪ グレー |
+
+### 仕組み
+
+前回の値をファイルに保存し、次回実行時に比較します。
 
 ```json
 {
-  "version": "V25 Final",
-  "status": {
-    "solar": {"value": 2.18, "trend": "↗", "class": "M-Class"},
-    "aurora": {"value": 79.4, "trend": "↘", "damping": -5.8},
-    "ionosphere": {"value": 5.0, "trend": "→", "condition": "True Signal"}
-  },
-  "risk_metrics": {
-    "base": 10.0,
-    "structural": 20.0,
-    "trigger": 10.0,
-    "total_score": 40.0
-  },
-  "alert_level": "WARNING"
+  "solar": {"value": 2.18, "trend": "↗", "class": "M-Class"},
+  "aurora": {"value": 79.4, "trend": "↘", "damping": -5.8},
+  "ionosphere": {"value": 5.0, "trend": "→", "condition": "True Signal"}
 }
 ```
 
-#### 1. Base Risk (背景ノイズ)
-- **Cyclic Torsion**: 惑星配置による潮汐力
-- **Sector Bias**: 意識データの偏り
-
-#### 2. Structural Stress (地学的負荷) - The "Baseline"
-- **JAXA SAR**: 地殻変動検知時、固定値 **+20.0** を加算。
-  - 変動エリアは常にリスク嵩上げ状態となり、感度が上昇する。
-
-#### 3. Trigger Score (トリガー) - The "True Signal" Filter
-電離層異常（NICT）が「太陽ノイズ」か「地震前兆」かを判別する。
-
-- **Case A: Solar Cancel (太陽ノイズ除去)**
-  - 条件: `Space Factor > 3.0` (太陽が荒れている)
-  - 処理: `Ionosphere Risk` × 0.2 (抑制)
-  - 目的: 太陽由来の誤報を防ぐ。
-
-- **Case B: True Signal Boost (真正シグナル強調)**
-  - 条件: `Space Factor < 1.5` (太陽静穏) AND `Risk > 5.0`
-  - 処理: `Ionosphere Risk` × 2.0 (増幅)
-  - 目的: **「嵐の前の静けさ」**における異常を見逃さない。
-
-### 3.4 地質学的可視化 (Geological Visualization)
-Leafletマップ上に以下のリスクレイヤーを展開：
-1. **活断層**: 中央構造線(MTL)、糸魚川静岡構造線(ISTL) 等
-2. **海溝・トラフ**: 南海トラフ、日本海溝、相模トラフ 等
-3. **地殻変動**: JAXAデータに基づく変動エリアへの警告表示
-
-### 3.3 相関分析エンジン
-
-`correlation_analyzer.py` はピアソン相関係数を使用して、電離層異常と実際の地震発生の統計的関係を分析する。
-
-```
-相関係数 r:
-- r ≥ 0.7: 強い正相関 → 「完全勝利」
-- 0.4 ≤ r < 0.7: 中程度の相関
-- r < 0.4: 弱い相関または無相関
-```
+これにより、ダッシュボードを一目見るだけで**状況の変化（モメンタム）**を把握できます。
 
 ---
 
-## 4. Implementation Results
+## 🗾 地質学的可視化 — 日本の断層を知る
 
-### 4.1 実測データ (2026-01-17)
+UM-Infinity V25 は、地図上に以下の地質リスクを表示します。
+
+### 表示レイヤー
+
+1. **中央構造線 (MTL)**  
+   九州〜四国〜紀伊半島〜愛知を横断する日本最大級の断層
+
+2. **糸魚川-静岡構造線 (ISTL)**  
+   本州を東西に二分するフォッサマグナの西縁
+
+3. **南海トラフ**  
+   今後30年で70〜80%の確率でM8級地震が予測される海溝
+
+4. **日本海溝・相模トラフ**  
+   東日本大震災の震源域を含む太平洋プレート境界
+
+> **なぜ可視化が重要か：**  
+> 「自分の住む場所が断層の近くにあるのか」を知ることで、ダッシュボードの警告が**自分事**として理解できます。
+
+---
+
+## 📈 実測データ例 (2026年1月17日)
 
 | 指標 | 値 | 解釈 |
-|-----|-----|------|
-| Space Factor | 2.18 | M-classフレア相当 |
-| Kp-index | 5.33 | 活発な地磁気擾乱 |
-| Aurora Power | 498.9 GW | 非常に活発 |
-| Damping Factor | 20.0 | 最大ダンピング |
-| Ionosphere | NICT Level 0 | 正常 (Green) |
-| JAXA SAR | **Deformation Detected** | ⚠ 隆起検知 (Red Alert) |
-| Active Faults | MTL / Nankai Trough | 地図上に赤線表示 |
+|:---|:---|:---|
+| ☀️ Space Factor | 2.18 | M-classフレア相当 |
+| 🌌 Kp-index | 5.33 | 活発な地磁気擾乱 |
+| 🌌 Aurora Power | 498.9 GW | 非常に活発 → ダンピング最大 |
+| 📡 NICT Ionosphere | Level 0 (Green) | 異常なし |
+| 🛰️ JAXA SAR | **Deformation Detected** | ⚠️ 隆起検知 |
 
-### 4.2 動作確認
-
-**ケース1: 太陽ノイズのキャンセル (Solar Cancel)**
-```
-Solar Flux = High (Space Factor 4.0)
-NICT Risk = High (10.0)
--> Filter: "Solar Cancelled"
--> Final trigger = 10.0 × 0.2 = 2.0 (低リスク)
-```
-太陽嵐の最中は電離層が乱れて当然であるため、これを地震予兆としては扱わない。
-
-**ケース2: 真正シグナルの検出 (True Signal)**
-```
-Solar Flux = Quiet (Space Factor 1.0)
-NICT Risk = High (10.0)
--> Filter: "True Signal DETECTED"
--> Final trigger = 10.0 × 2.0 = 20.0 (激甚リスク)
-```
-太陽が静かなのに電離層が乱れている場合、地殻からのラドン放出等の影響と判断し、最大級の警戒を発する。
+**判定結果：**
+- 電離層は正常だが、**地殻変動が検知**されているため、**Structural Stress +20** が加算。
+- トータルリスク上昇 → **CAUTION** レベルの警戒を推奨。
 
 ---
 
-## 5. Discussion
+## 🔮 今後の展望
 
-### 5.1 日本特化型ローカライズ
-NOAAのUS-TECからNICT（日本）のデータへ移行したことで、日本列島直下の前兆検知能力が飛躍的に向上した。
+1. **機械学習の導入**  
+   過去データから「当たった警告」と「外れた警告」を学習し、精度を自動向上。
 
-### 5.2 「人工地震」への対応
-(不変のため省略)
+2. **リアルタイムプッシュ通知**  
+   スマートフォンへの即時警報配信。
 
-### 5.3 地質学的コンテキスト
-活断層と海溝を地図上に重ねることで、「豊橋市が中央構造線直上にある」といった地理的リスクをユーザーが直感的に理解できるようになった。
-
----
-
-## 6. Conclusion
-
-UM-Infinity V25 は、宇宙・大気・地殻・構造の4層統合監視システムへと進化した。
-特に **JAXA SARデータ** の統合は、物理的な「歪み」をリスク計算に直結させる画期的な機能である。
+3. **国際連携**  
+   NICTデータに加え、欧州・アジアの電離層データを統合したグローバル監視網。
 
 ---
 
-## References
+## 📚 参考文献
 
-1. NOAA Space Weather Prediction Center
-2. **NICT (National Institute of Information and Communications Technology)** - Space Weather
-3. **JAXA (Japan Aerospace Exploration Agency)** - ALOS-2/4 Data
-4. P2P地震情報 API / USGS
+1. NOAA Space Weather Prediction Center — [swpc.noaa.gov](https://www.swpc.noaa.gov/)
+2. NICT 宇宙天気情報センター — [swc.nict.go.jp](https://swc.nict.go.jp/)
+3. JAXA EORC (Earth Observation Research Center) — [earth.jaxa.jp](https://www.eorc.jaxa.jp/)
+4. P2P地震情報 API — [api.p2pquake.net](https://api.p2pquake.net/)
+5. Pulinets & Boyarchuk (2004) — *Ionospheric Precursors of Earthquakes*
 
 ---
 
-## Appendix: JSON Output Schema (V25 Final)
+## 💡 まとめ — UM-Infinity V25 が目指すもの
 
-```json
-{
-  "predictions": [...],
-  "total_torsion": 45,
-  "cyclic_modifier": 16,
-  "space_factor": 2.18,
-  "aurora_power_gw": 498.9,
-  "ionosphere_risk": 0.0,
-  "ionosphere_level": 0,
-  "ionosphere_source": "NICT (Japan)",
-  "sar_detected": true,
-  "sar_source": "JAXA ALOS-2/4 (Daichi)",
-  "awaken": "DYNAMIC",
-  "sirius_proof": true,
-  "protocol_version": "V25 Ionosphere"
-}
-```
+> **「地震は予測できない」という常識を覆す。**
+
+UM-Infinity V25 は、
+- **宇宙**（太陽活動）
+- **大気**（オーロラ・電離層）
+- **地殻**（JAXA衛星による変動監視）
+- **構造**（活断層の可視化）
+
+という**4層の統合監視**により、地震リスクを多角的に評価します。
+
+単一のデータソースに頼るのではなく、複数の独立した情報源を組み合わせることで、**誤報（False Positive）と見逃し（False Negative）の両方を最小化**することを目指しています。
+
+---
+
+*本システムは研究・開発段階にあり、公式な災害警報システムではありません。*  
+*実際の避難行動は、気象庁等の公的機関の情報に基づいて行ってください。*
